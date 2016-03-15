@@ -15,12 +15,15 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import settings.CSettingManager;
 
 /**
  *
  * @author Bryden
  */
 public class CFileFactory {
+
+    private static Path objFolderPath = null;
 
     private CFileFactory() {
 
@@ -36,6 +39,12 @@ public class CFileFactory {
 
     public static void createFile(Path pObjFilePath, String pStrContents) throws IOException {
         Files.write(pObjFilePath, pStrContents.getBytes());
+    }
+
+    public static void createFile(String pStrFile, String pStrContents) throws IOException {
+        objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
+        Path objFilePath = objFolderPath.resolve(pStrFile);
+        Files.write(objFilePath, pStrContents.getBytes());
     }
 
     public static void createFolder(Path pObjFilePath) throws IOException {
@@ -71,13 +80,13 @@ public class CFileFactory {
 
             @Override
             public FileVisitResult preVisitDirectory(Path dir,
-                                                     BasicFileAttributes attrs) throws IOException {
+                    BasicFileAttributes attrs) throws IOException {
                 return FileVisitResult.CONTINUE;
             }
 
             @Override
             public FileVisitResult visitFile(Path file,
-                                             BasicFileAttributes attrs) throws IOException {
+                    BasicFileAttributes attrs) throws IOException {
 
                 Files.delete(file);
                 return FileVisitResult.CONTINUE;

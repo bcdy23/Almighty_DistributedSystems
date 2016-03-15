@@ -16,7 +16,6 @@ import java.util.Properties;
 public class CSettingManager {
 
     private static final Properties objProperties = new Properties();
-
     private static final String strPropertyPath = "setting/Settings.xml";
 
     private CSettingManager() {

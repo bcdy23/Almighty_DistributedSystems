@@ -5,6 +5,8 @@
  */
 package main;
 
+import io.CFileFactory;
+import java.io.IOException;
 import settings.CSettingManager;
 
 /**
@@ -13,10 +15,10 @@ import settings.CSettingManager;
  */
 public class CMain {
 
-    public static void main(String... pAryArgs) {
+    public static void main(String... pAryArgs) throws IOException {
 
-        System.out.println(CSettingManager.getSetting("Welcome_Message"));
+        CFileFactory.createFile("abc.txt", CSettingManager.getSetting("Welcome_Message"));
         
+        System.out.println(CSettingManager.getSetting("Welcome_Message"));
     }
-
 }

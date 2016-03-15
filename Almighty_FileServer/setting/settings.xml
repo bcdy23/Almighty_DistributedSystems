@@ -7,4 +7,6 @@
     <entry key="Proxy_IP">127.0.0.1</entry>
         
     <entry key="Welcome_Message">Welcome Dr Sun, Dr Tang and Prof Chin</entry>
+	
+	<entry key="File_Location">Almighty_Data</entry>
 </properties>
