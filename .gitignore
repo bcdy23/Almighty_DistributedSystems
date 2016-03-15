@@ -12,10 +12,15 @@
 hs_err_pid*
 
 #Netbeans specific folders
-nbproject/private/
+nbproject/
 build/
 nbbuild/
 dist/
 nbdist/
 nbactions.xml
 nb-configuration.xml
+build.xml
+manifest.mf
+/Almighty_FileServer/nbproject/
+/Almighty_FileServer/build.xml
+/Almighty_FileServer/manifest.mf
