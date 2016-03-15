@@ -5,6 +5,8 @@
  */
 package main;
 
+import settings.CSettingManager;
+
 /**
  *
  * @author bcho002
@@ -13,7 +15,7 @@ public class CMain {
 
     public static void main(String... pAryArgs) {
 
-        System.out.println("Hello Dr Tang and Dr Sun");
+        System.out.println(CSettingManager.getSetting("Welcome_Message"));
         
     }
 
