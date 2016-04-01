@@ -5,8 +5,6 @@ import io.CFileFactory.IO_STATUS;
 
 import java.io.IOException;
 
-import settings.CSettingManager;
-
 /**
  *
  * @author King Chody & Gosu the Minion
@@ -15,13 +13,28 @@ public class CMain {
 
     public static void main(String... pAryArgs) throws IOException {
 
-        /*CFileFactory.createFile("subDir1_1/subDir2_1/subDir3_2/abc.txt",
-        		CSettingManager.getSetting("Welcome_Message"));*/
+    	// Test create file
+        if(CFileFactory.createFile("subDir1_2/abc.txt", "Hello World")) {
+        	System.out.println("File created successfully!");
+        }
         
-        System.out.println(CSettingManager.getSetting("Welcome_Message"));
+        // Test delete from file
+        IO_STATUS ioStatus = CFileFactory.deleteFromFile("subDir1_2/abc.txt", 11, 10);
+
+        switch (ioStatus) {
+        case FILE_NOT_FOUND:
+        	System.out.println("DELETE ERROR: FILE NOT FOUND LA!");
+        	break;
+        case OFFSET_EXCEEDS_LENGTH:
+        	System.out.println("DELETE ERROR: OFFSET EXCEEDS LENGTH LA! Please contact King Chody for further assistance.");
+        	break;
+        case SUCCESS:
+        	System.out.println("DELETED data from file successfully!");
+        	break;
+        }
         
-		IO_STATUS ioStatus = CFileFactory.writeToFile(
-				"subDir1_1/subDir2_1/subDir3_2/abc.txt", 47, " AWESOME");
+        /*// Test write to file
+		IO_STATUS ioStatus = CFileFactory.writeToFile("subDir1_2/abc.txt", 11, " 4W3S0M3");
 		
 		switch (ioStatus) {
 		case FILE_NOT_FOUND:
@@ -35,7 +48,8 @@ public class CMain {
 			break;
 		}
         
-        /*StringBuilder sb = new StringBuilder();
+		// Test read from file
+        StringBuilder sb = new StringBuilder();
 		ioStatus = CFileFactory.readFromFile(
 				"subDir1_1/subDir2_1/subDir3_2/abc.txt", 0, 5, sb);
 		
@@ -47,7 +61,7 @@ public class CMain {
 			System.out.println("READ ERROR: OFFSET EXCEEDS LENGTH LA! Please contact King Chody for further assistance.");
 			break;
 		case SUCCESS:
-			System.out.println(sb.toString());
+			System.out.println("READ DATA: " + sb.toString());
 			break;
 		}*/
     }
