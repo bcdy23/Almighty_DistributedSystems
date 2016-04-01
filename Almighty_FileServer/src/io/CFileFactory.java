@@ -2,6 +2,9 @@ package io;
 
 import java.io.IOException;
 import java.io.InputStream;
+
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
@@ -10,6 +13,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
+
 import settings.CSettingManager;
 
 /**
@@ -37,7 +41,15 @@ public class CFileFactory {
         Files.write(pObjFilePath, pStrContents.getBytes());
     }*/
 
-    public static void createFile(String pStrFile, String pStrContents) throws IOException {
+    /**
+     * Returns true if file created succcessfully, false if file already exists.
+     * 
+     * @param pStrFile		String representation of the file path
+     * @param pStrContents	Contents to be written to the file
+     * @return				True if file created successfully, false if file already exists
+     * @throws IOException	
+     */
+    public static boolean createFile(String pStrFile, String pStrContents) throws IOException {
     	
         objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
         
@@ -45,7 +57,13 @@ public class CFileFactory {
         if(Files.notExists(objFilePath.getParent())) {
         	createFolder(objFilePath.getParent());
         }
+        
+        if(Files.exists(objFilePath)) {
+        	return false;
+        }
+        
         Files.write(objFilePath, pStrContents.getBytes());
+        return true;
     }
 
     public static void createFolder(Path pObjFilePath) throws IOException {
@@ -102,7 +120,6 @@ public class CFileFactory {
                 return FileVisitResult.CONTINUE;
             }
         });
-
     }
 
     public static InputStream getFile_InputStream(String pStrPath) throws IOException {
@@ -113,13 +130,13 @@ public class CFileFactory {
         return Files.newInputStream(pObjPath, StandardOpenOption.READ);
     }
     
-	public static READ_STATUS readFromFile(String pathname, int offset,
+	public static IO_STATUS readFromFile(String pathname, int offset,
 			int numBytes, StringBuilder sb) throws IOException {
 
 		objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
         Path objFilePath = objFolderPath.resolve(pathname);
         if(!Files.exists(objFilePath)) {
-        	return READ_STATUS.FILE_NOT_FOUND;
+        	return IO_STATUS.FILE_NOT_FOUND;
         }
         
 		InputStream is = getFile_InputStream(objFilePath);
@@ -129,7 +146,7 @@ public class CFileFactory {
 		if(is.skip(offset) < offset) {
 			
 			is.close();
-			return READ_STATUS.OFFSET_EXCEEDS_LENGTH;
+			return IO_STATUS.OFFSET_EXCEEDS_LENGTH;
 		}
 		
 		// Read from the input stream, result appended to the StringBuilder
@@ -140,10 +157,46 @@ public class CFileFactory {
 		}
 
 		is.close();
-		return READ_STATUS.SUCCESS;
+		return IO_STATUS.SUCCESS;
+	}
+	
+	public static IO_STATUS writeToFile(String pathname, int offset, String data) throws IOException {
+
+		objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
+        Path objFilePath = objFolderPath.resolve(pathname);
+        if(!Files.exists(objFilePath)) {
+        	return IO_STATUS.FILE_NOT_FOUND;
+        }
+		
+        // Gets the SeekableByteChannel for writing to file
+		SeekableByteChannel sbc = Files.newByteChannel(objFilePath,
+				StandardOpenOption.READ, StandardOpenOption.WRITE);
+		
+		// Tries to offset the current position in the file
+		if(offset > sbc.size()) {
+			
+			sbc.close();
+			return IO_STATUS.OFFSET_EXCEEDS_LENGTH;
+		}
+		else {
+			sbc.position(offset);
+		}
+		
+		long remaining = sbc.size() - sbc.position();
+		ByteBuffer rbb = ByteBuffer.allocate((int) remaining);
+		sbc.read(rbb);
+		String remainingStr = new String(rbb.array());
+		
+		// Writes to the file
+		data +=  remainingStr;
+		sbc.position(offset);
+		sbc.write(ByteBuffer.wrap(data.getBytes()));
+		
+		sbc.close();
+		return IO_STATUS.SUCCESS;
 	}
     
-    public enum READ_STATUS {
+    public enum IO_STATUS {
     	
     	SUCCESS,
     	FILE_NOT_FOUND,
