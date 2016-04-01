@@ -32,25 +32,25 @@ public class CFileFactory {
         }
     }*/
 
-    /*public static void createFile(Path pObjFilePath, String pStrContents) throws IOException {
+ /*public static void createFile(Path pObjFilePath, String pStrContents) throws IOException {
     	
         Files.write(pObjFilePath, pStrContents.getBytes());
     }*/
-
+    
     public static void createFile(String pStrFile, String pStrContents) throws IOException {
-    	
+
         objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
-        
+
         Path objFilePath = objFolderPath.resolve(pStrFile);
-        if(Files.notExists(objFilePath.getParent())) {
-        	createFolder(objFilePath.getParent());
+        if (Files.notExists(objFilePath.getParent())) {
+            createFolder(objFilePath.getParent());
         }
         Files.write(objFilePath, pStrContents.getBytes());
     }
 
     public static void createFolder(Path pObjFilePath) throws IOException {
-    	
-    	Files.createDirectories(pObjFilePath);
+
+        Files.createDirectories(pObjFilePath);
         //Files.createDirectory(pObjFilePath);
     }
 
@@ -112,41 +112,41 @@ public class CFileFactory {
     private static InputStream getFile_InputStream(Path pObjPath) throws IOException {
         return Files.newInputStream(pObjPath, StandardOpenOption.READ);
     }
-    
-	public static READ_STATUS readFromFile(String pathname, int offset,
-			int numBytes, StringBuilder sb) throws IOException {
 
-		objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
+    public static READ_STATUS readFromFile(String pathname, int offset,
+            int numBytes, StringBuilder sb) throws IOException {
+
+        objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
         Path objFilePath = objFolderPath.resolve(pathname);
-        if(!Files.exists(objFilePath)) {
-        	return READ_STATUS.FILE_NOT_FOUND;
+        if (!Files.exists(objFilePath)) {
+            return READ_STATUS.FILE_NOT_FOUND;
         }
-        
-		InputStream is = getFile_InputStream(objFilePath);
-		byte[] bytesArr = new byte[numBytes];
-		
-		// Reset input stream, tries to skip 'offset' number of bytes
-		if(is.skip(offset) < offset) {
-			
-			is.close();
-			return READ_STATUS.OFFSET_EXCEEDS_LENGTH;
-		}
-		
-		// Read from the input stream, result appended to the StringBuilder
-		int is_result = is.read(bytesArr, 0, numBytes);
-		if (is_result != -1) {
-			
-			sb.append(new String(bytesArr));
-		}
 
-		is.close();
-		return READ_STATUS.SUCCESS;
-	}
-    
+        InputStream is = getFile_InputStream(objFilePath);
+        byte[] bytesArr = new byte[numBytes];
+
+        // Reset input stream, tries to skip 'offset' number of bytes
+        if (is.skip(offset) < offset) {
+
+            is.close();
+            return READ_STATUS.OFFSET_EXCEEDS_LENGTH;
+        }
+
+        // Read from the input stream, result appended to the StringBuilder
+        int is_result = is.read(bytesArr, 0, numBytes);
+        if (is_result != -1) {
+
+            sb.append(new String(bytesArr));
+        }
+
+        is.close();
+        return READ_STATUS.SUCCESS;
+    }
+
     public enum READ_STATUS {
-    	
-    	SUCCESS,
-    	FILE_NOT_FOUND,
-    	OFFSET_EXCEEDS_LENGTH;
+
+        SUCCESS,
+        FILE_NOT_FOUND,
+        OFFSET_EXCEEDS_LENGTH;
     }
 }
