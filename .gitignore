@@ -24,3 +24,9 @@ manifest.mf
 /Almighty_FileServer/nbproject/
 /Almighty_FileServer/build.xml
 /Almighty_FileServer/manifest.mf
+
+#Eclipse specific folders
+/Almighty_FileServer/.settings
+/Almighty_FileServer/bin
+/Almighty_FileServer/.classpath
+/Almighty_FileServer/.project
