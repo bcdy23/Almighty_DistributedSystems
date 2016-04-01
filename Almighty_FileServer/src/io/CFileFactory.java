@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package io;
 
 import java.io.IOException;
@@ -19,7 +14,7 @@ import settings.CSettingManager;
 
 /**
  *
- * @author Bryden
+ * @author King Chody
  */
 public class CFileFactory {
 
@@ -29,26 +24,34 @@ public class CFileFactory {
 
     }
 
-    public static boolean isHiddenFile(Path pObjFilePath) {
+    /*public static boolean isHiddenFile(Path pObjFilePath) {
         try {
             return Files.isHidden(pObjFilePath);
         } catch (IOException ex) {
             return false;
         }
-    }
+    }*/
 
-    public static void createFile(Path pObjFilePath, String pStrContents) throws IOException {
+    /*public static void createFile(Path pObjFilePath, String pStrContents) throws IOException {
+    	
         Files.write(pObjFilePath, pStrContents.getBytes());
-    }
+    }*/
 
     public static void createFile(String pStrFile, String pStrContents) throws IOException {
+    	
         objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
+        
         Path objFilePath = objFolderPath.resolve(pStrFile);
+        if(Files.notExists(objFilePath.getParent())) {
+        	createFolder(objFilePath.getParent());
+        }
         Files.write(objFilePath, pStrContents.getBytes());
     }
 
     public static void createFolder(Path pObjFilePath) throws IOException {
-        Files.createDirectory(pObjFilePath);
+    	
+    	Files.createDirectories(pObjFilePath);
+        //Files.createDirectory(pObjFilePath);
     }
 
     public static void renameFile(Path pObjFilePath, String pStrNewName) throws IOException {
@@ -108,5 +111,24 @@ public class CFileFactory {
 
     private static InputStream getFile_InputStream(Path pObjPath) throws IOException {
         return Files.newInputStream(pObjPath, StandardOpenOption.READ);
+    }
+    
+	public static READ_STATUS readFromFile(String pathname, int offset,
+			int numBytes, StringBuilder sb) throws IOException {
+
+		InputStream is = getFile_InputStream(pathname);
+		byte[] bytesArr = new byte[numBytes];
+		
+		int is_result = is.read(bytesArr, offset, numBytes);
+		
+
+		return READ_STATUS.SUCCESS;
+	}
+    
+    public enum READ_STATUS {
+    	
+    	SUCCESS,
+    	FILE_NOT_FOUND,
+    	OFFSET_EXCEEDS_LENGTH;
     }
 }
