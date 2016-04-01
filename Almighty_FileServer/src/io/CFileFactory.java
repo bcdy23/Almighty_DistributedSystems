@@ -116,12 +116,30 @@ public class CFileFactory {
 	public static READ_STATUS readFromFile(String pathname, int offset,
 			int numBytes, StringBuilder sb) throws IOException {
 
-		InputStream is = getFile_InputStream(pathname);
+		objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
+        Path objFilePath = objFolderPath.resolve(pathname);
+        if(!Files.exists(objFilePath)) {
+        	return READ_STATUS.FILE_NOT_FOUND;
+        }
+        
+		InputStream is = getFile_InputStream(objFilePath);
 		byte[] bytesArr = new byte[numBytes];
 		
-		int is_result = is.read(bytesArr, offset, numBytes);
+		// Reset input stream, tries to skip 'offset' number of bytes
+		if(is.skip(offset) < offset) {
+			
+			is.close();
+			return READ_STATUS.OFFSET_EXCEEDS_LENGTH;
+		}
 		
+		// Read from the input stream, result appended to the StringBuilder
+		int is_result = is.read(bytesArr, 0, numBytes);
+		if (is_result != -1) {
+			
+			sb.append(new String(bytesArr));
+		}
 
+		is.close();
 		return READ_STATUS.SUCCESS;
 	}
     
