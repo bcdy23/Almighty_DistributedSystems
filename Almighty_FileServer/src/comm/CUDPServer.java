@@ -31,6 +31,8 @@ public class CUDPServer {
         DatagramPacket objPacket = new DatagramPacket(aryBuffer, aryBuffer.length);
         socket.receive(objPacket);
         
+        
+        
         String received = new String(objPacket.getData(), 0, objPacket.getLength());
         System.out.println("Recieved : " + received);
 

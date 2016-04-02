@@ -11,12 +11,12 @@ package comm;
  */
 public class CNetworkManager {
 
-    public static int unmarshallInt(byte[] pAryData) {
+    public static int unmarshallInt(byte[] pAryData, int pIntOffset) {
 
-        int intValue = (int) pAryData[3] & 0xFF;
-        intValue += ((int) pAryData[2] & 0xFF) << 8;
-        intValue += ((int) pAryData[1] & 0xFF) << 16;
-        intValue += ((int) pAryData[0] & 0xFF) << 24;
+        int intValue = (int) pAryData[pIntOffset + 3] & 0xFF;
+        intValue += ((int) pAryData[pIntOffset + 2] & 0xFF) << 8;
+        intValue += ((int) pAryData[pIntOffset + 1] & 0xFF) << 16;
+        intValue += ((int) pAryData[pIntOffset] & 0xFF) << 24;
 
         return intValue;
     }
@@ -33,7 +33,7 @@ public class CNetworkManager {
         return aryData;
     }
 
-    public static StringBuilder unmarshallString(byte[] pAryData) {
+    public static StringBuilder unmarshallString(byte[] pAryData, int pIntOffset) {
 
         StringBuilder objSB = new StringBuilder();
 
@@ -41,6 +41,11 @@ public class CNetworkManager {
     }
 
     public static byte[] marshallString(String pStrData) {
+
+        int intLength = pStrData.length();
+
+        byte[] aryData = new byte[intLength + 4];
+
         return new byte[4];
     }
 
