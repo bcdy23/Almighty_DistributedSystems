@@ -15,8 +15,20 @@ public class CNetworkManager {
         return 0;
     }
 
-    public static byte[] unmarshallInt(int pIntData) {
+    public static byte[] marshallInt(int pIntData) {
         return new byte[4];
     }
 
+    public static StringBuilder unmarshallString(byte[] pAryData) {
+        
+        StringBuilder objSB = new StringBuilder();
+        
+        
+        return objSB;
+    }
+
+    public static byte[] marshallString(String pStrData) {
+        return new byte[4];
+    }
+    
 }
