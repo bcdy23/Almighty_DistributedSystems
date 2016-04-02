@@ -33,6 +33,32 @@ public class CNetworkManager {
         return aryData;
     }
 
+    public static long unmarshallLong(byte[] pAryData, int pIntOffset) {
+
+        long intValue = (long) pAryData[pIntOffset + 7] & 0xFF;
+        intValue += ((long) pAryData[pIntOffset + 6] & 0xFF) << 8;
+        intValue += ((long) pAryData[pIntOffset + 5] & 0xFF) << 16;
+        intValue += ((long) pAryData[pIntOffset + 4] & 0xFF) << 24;
+        intValue += ((long) pAryData[pIntOffset + 3] & 0xFF) << 32;
+        intValue += ((long) pAryData[pIntOffset + 2] & 0xFF) << 40;
+        intValue += ((long) pAryData[pIntOffset + 1] & 0xFF) << 48;
+        intValue += ((long) pAryData[pIntOffset] & 0xFF) << 56;
+
+        return intValue;
+    }
+
+    public static byte[] marshallLong(long pIntData) {
+
+        byte[] aryData = new byte[8];
+
+        for (int i = 7; i >= 0; i--) {
+            aryData[i] = (byte) (pIntData & 0xff);
+            pIntData >>>= 8;
+        }
+
+        return aryData;
+    }
+
     public static StringBuilder unmarshallString(byte[] pAryData, int pIntOffset) {
 
         int intLength = unmarshallInt(pAryData, pIntOffset);
