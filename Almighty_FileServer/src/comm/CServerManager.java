@@ -25,7 +25,6 @@ public class CServerManager {
         
         // Byte arraylist for storing results
         ArrayList<Byte> lstBytes = new ArrayList<>();
-        String result = "";
         
         switch(objCommand) {
         
@@ -33,13 +32,11 @@ public class CServerManager {
 			break;
 			
 		case CREATE:
-			result = createFile(pAryData, offset);
-			addToResult(lstBytes, marshallString(result));
+			createFile(pAryData, offset, lstBytes);
 			break;
 			
 		case DELETE:
-			result = deleteFromFile(pAryData, offset);
-			addToResult(lstBytes, marshallString(result));
+			deleteFromFile(pAryData, offset, lstBytes);
 			break;
 			
 		case ERROR:
@@ -49,23 +46,18 @@ public class CServerManager {
 			break;
 			
 		case MOVE:
-			result = moveOrRenameFile(pAryData, offset);
-			addToResult(lstBytes, marshallString(result));
+			moveOrRenameFile(pAryData, offset, lstBytes);
 			break;
 			
 		case READ:
-			StringBuilder sb = new StringBuilder();
-			result = readFromFile(pAryData, offset, sb);
-			addToResult(lstBytes, marshallString(result));
-			addToResult(lstBytes, marshallString(sb.toString()));
+			readFromFile(pAryData, offset, lstBytes);
 			break;
 			
 		case UPDATE:
 			break;
 			
 		case WRITE:
-			result = writeToFile(pAryData, offset);
-			addToResult(lstBytes, marshallString(result));
+			writeToFile(pAryData, offset, lstBytes);
 			break;
 			
 		default:
@@ -75,18 +67,20 @@ public class CServerManager {
         return convertResult(lstBytes);
     }
     
-    private static String createFile(byte[] pAryData, int offset) throws IOException {
+    private static void createFile(byte[] pAryData, int offset, ArrayList<Byte> lstBytes) throws IOException {
     	
     	String strPathName = unmarshallString(pAryData, offset).toString();
     	
     	if(CFileFactory.createFile(strPathName, "")) {
-        	return "File created successfully!";
+    		addToResult(lstBytes, "SUCCESS");
+        	addToResult(lstBytes, "File created successfully!");
         }
     	
-    	return "Create File Error: File already exists!";
+    	addToResult(lstBytes, "ERROR");
+    	addToResult(lstBytes, "Create File Error: File already exists!");
     }
     
-    private static String readFromFile(byte[] pAryData, int offset, StringBuilder sb) throws IOException {
+    private static void readFromFile(byte[] pAryData, int offset, ArrayList<Byte> lstBytes) throws IOException {
     	
     	String strPathName = unmarshallString(pAryData, offset).toString();
     	offset += strPathName.length() + 4;
@@ -97,22 +91,32 @@ public class CServerManager {
     	int numBytesToRead = unmarshallInt(pAryData, offset);
     	offset += 4;
     	
+    	StringBuilder sb = new StringBuilder();
     	IO_STATUS ioStatus = CFileFactory.readFromFile(
     			strPathName, fileOffset, numBytesToRead, sb);
 		
 		switch (ioStatus) {
 		case FILE_NOT_FOUND:
-			return "READ ERROR: FILE NOT FOUND LA!";
+			addToResult(lstBytes, "ERROR");
+			addToResult(lstBytes, "READ ERROR: FILE NOT FOUND LA!");
+			break;
 		case OFFSET_EXCEEDS_LENGTH:
-			return "READ ERROR: OFFSET EXCEEDS LENGTH LA! Please contact King Chody for further assistance.";
+			addToResult(lstBytes, "ERROR");
+			addToResult(lstBytes, "READ ERROR: OFFSET EXCEEDS LENGTH LA!");
+			break;
 		case SUCCESS:
-			return "Read data from '" + strPathName + "' successfully.";
+			addToResult(lstBytes, "SUCCESS");
+			addToResult(lstBytes, "Read data from '" + strPathName + "' successfully.");
+			long lastModifiedTime = CFileFactory.getLastModifiedTime(strPathName);
+			// MARSHALL LONG
+			
+			break;
 		default:
-			return "";
+			break;
 		}
     }
     
-    private static String writeToFile(byte[] pAryData, int offset) throws IOException {
+    private static void writeToFile(byte[] pAryData, int offset, ArrayList<Byte> lstBytes) throws IOException {
     	
     	String strPathName = unmarshallString(pAryData, offset).toString();
     	offset += strPathName.length() + 4;
@@ -126,17 +130,23 @@ public class CServerManager {
 		
 		switch (ioStatus) {
 		case FILE_NOT_FOUND:
-			return "WRITE ERROR: FILE NOT FOUND LA!";
+			addToResult(lstBytes, "ERROR");
+			addToResult(lstBytes, "WRITE ERROR: FILE NOT FOUND LA!");
+			break;
 		case OFFSET_EXCEEDS_LENGTH:
-			return "WRITE ERROR: OFFSET EXCEEDS LENGTH LA! Please contact King Chody for further assistance.";
+			addToResult(lstBytes, "ERROR");
+			addToResult(lstBytes, "WRITE ERROR: OFFSET EXCEEDS LENGTH LA!");
+			break;
 		case SUCCESS:
-			return "Written data to '" + strPathName + "' successfully.";
+			addToResult(lstBytes, "SUCCESS");
+			addToResult(lstBytes, "Written data to '" + strPathName + "' successfully.");
+			break;
 		default:
-			return "";
+			break;
 		}
     }
     
-    private static String deleteFromFile(byte[] pAryData, int offset) throws IOException {
+    private static void deleteFromFile(byte[] pAryData, int offset, ArrayList<Byte> lstBytes) throws IOException {
     	
     	String strPathName = unmarshallString(pAryData, offset).toString();
     	offset += strPathName.length() + 4;
@@ -151,17 +161,23 @@ public class CServerManager {
 		
 		switch (ioStatus) {
 		case FILE_NOT_FOUND:
-			return "DELETE ERROR: FILE NOT FOUND LA!";
+			addToResult(lstBytes, "ERROR");
+			addToResult(lstBytes, "DELETE ERROR: FILE NOT FOUND LA!");
+			break;
 		case OFFSET_EXCEEDS_LENGTH:
-			return "DELETE ERROR: OFFSET EXCEEDS LENGTH LA! Please contact King Chody for further assistance.";
+			addToResult(lstBytes, "ERROR");
+			addToResult(lstBytes, "DELETE ERROR: OFFSET EXCEEDS LENGTH LA!");
+			break;
 		case SUCCESS:
-			return "Deleted data from '" + strPathName + "' successfully.";
+			addToResult(lstBytes, "SUCCESS");
+			addToResult(lstBytes, "Deleted data from '" + strPathName + "' successfully.");
+			break;
 		default:
-			return "";
+			break;
 		}
     }
     
-    private static String moveOrRenameFile(byte[] pAryData, int offset) throws IOException {
+    private static void moveOrRenameFile(byte[] pAryData, int offset, ArrayList<Byte> lstBytes) throws IOException {
     	
     	String strPathNameOld = unmarshallString(pAryData, offset).toString();
     	offset += strPathNameOld.length() + 4;
@@ -172,15 +188,25 @@ public class CServerManager {
 		
 		switch (ioStatus) {
 		case FILE_NOT_FOUND:
-			return "MOVE/RENAME ERROR: FILE NOT FOUND LA!";
+			addToResult(lstBytes, "ERROR");
+			addToResult(lstBytes, "MOVE/RENAME ERROR: FILE NOT FOUND LA!");
+			break;
 		case FILE_NAME_ALREADY_EXISTS:
-			return "MOVE/RENAME ERROR: File with same name exists at destination.";
+			addToResult(lstBytes, "ERROR");
+			addToResult(lstBytes, "MOVE/RENAME ERROR: File with same name exists at destination.");
+			break;
 		case SUCCESS:
-			return "Moved/Renamed from '" + strPathNameOld + "' to '"
-					+ strPathNameNew + "' successfully.";
+			addToResult(lstBytes, "SUCCESS");
+			addToResult(lstBytes, "Moved/Renamed from '" + strPathNameOld + "' to '"
+					+ strPathNameNew + "' successfully.");
+			break;
 		default:
-			return "";
+			break;
 		}
+    }
+    
+    private static void addToResult(ArrayList<Byte> lstBytes, String str) {
+    	addToResult(lstBytes, marshallString(str));
     }
     
     private static void addToResult(ArrayList<Byte> lstBytes, byte[] arrBytes) {

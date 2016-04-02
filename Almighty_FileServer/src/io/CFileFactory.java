@@ -278,6 +278,15 @@ public class CFileFactory {
         
         return IO_STATUS.SUCCESS;
 	}
+	
+	public static long getLastModifiedTime(String pathname) throws IOException {
+		
+		objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
+        Path objFilePath = objFolderPath.resolve(pathname);
+		BasicFileAttributes attrs = Files.readAttributes(objFilePath, BasicFileAttributes.class);
+		
+		return attrs.lastModifiedTime().toMillis();
+	}
     
     public enum IO_STATUS {
     	
