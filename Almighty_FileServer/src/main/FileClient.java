@@ -36,6 +36,12 @@ public class FileClient {
             switch (ECommand.getCommand(intChoice)) {
                 case READ:
 
+                    String strFile = getStringChoice();
+                    
+                    int intOffset = getIntChoice();
+                    
+                    String strData = getStringChoice();
+                    
                     break;
                 case WRITE:
 
