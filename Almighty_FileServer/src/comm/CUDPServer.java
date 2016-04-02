@@ -31,7 +31,7 @@ public class CUDPServer {
             DatagramPacket objPacket = new DatagramPacket(aryBuffer, aryBuffer.length);
             socket.receive(objPacket);
 
-            byte[] aryOutput = CServerManager.performOperation(objPacket.getData());
+            byte[] aryOutput = CServerManager.performOperation(objPacket.getData(), objPacket.getAddress().getHostAddress());
 
             InetAddress objAddress = objPacket.getAddress();
 

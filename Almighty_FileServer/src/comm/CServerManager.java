@@ -17,7 +17,7 @@ import java.util.ArrayList;
  */
 public class CServerManager {
 
-    public static byte[] performOperation(byte[] pAryData) throws IOException {
+    public static byte[] performOperation(byte[] pAryData, String pStrAddr) throws IOException {
 
         int offset = 0;
     	
