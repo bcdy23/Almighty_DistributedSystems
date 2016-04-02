@@ -72,13 +72,13 @@ public class CFileFactory {
         //Files.createDirectory(pObjFilePath);
     }
 
-    public static void renameFile(Path pObjFilePath, String pStrNewName) throws IOException {
+    /*public static void renameFile(Path pObjFilePath, String pStrNewName) throws IOException {
         Files.move(pObjFilePath, pObjFilePath.resolveSibling(pStrNewName), StandardCopyOption.ATOMIC_MOVE);
     }
 
     public static void renameFolder(Path pObjFilePath, String pStrNewName) throws IOException {
         Files.move(pObjFilePath, pObjFilePath.resolveSibling(pStrNewName), StandardCopyOption.ATOMIC_MOVE);
-    }
+    }*/
 
     public static void updateFile(Path pObjFilePath, String pStrContents) throws IOException {
         Files.write(pObjFilePath, pStrContents.getBytes(), StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
@@ -243,11 +243,43 @@ public class CFileFactory {
 		sbc.close();
 		return IO_STATUS.SUCCESS;
 	}
+	
+	public static IO_STATUS moveOrRenameFile(String pathnameOld, String pathnameNew) throws IOException {
+		
+		objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
+        Path objFilePathOld = objFolderPath.resolve(pathnameOld);
+        Path objFilePathNew = objFolderPath.resolve(pathnameNew);
+        
+        // Check if the specified file exists
+        if(!Files.exists(objFilePathOld)) {
+        	return IO_STATUS.FILE_NOT_FOUND;
+        }
+        
+        // Check if a file with similar name exists at the target destination
+        if(!Files.exists(objFilePathNew)) {
+        	return IO_STATUS.FILE_NAME_ALREADY_EXISTS;
+        }
+        
+        // Rename
+        if(objFilePathOld.getParent().equals(objFilePathNew.getParent())) {
+        	
+        	Files.move(objFilePathOld, objFilePathOld.resolveSibling(
+        			objFilePathNew.getFileName()));
+        }
+        // Move
+        else {
+        	
+        	Files.move(objFilePathOld, objFilePathNew.resolve(objFilePathOld.getFileName()));
+        }
+        
+        return IO_STATUS.SUCCESS;
+	}
     
     public enum IO_STATUS {
     	
     	SUCCESS,
     	FILE_NOT_FOUND,
-    	OFFSET_EXCEEDS_LENGTH;
+    	OFFSET_EXCEEDS_LENGTH,
+    	FILE_NAME_ALREADY_EXISTS;
     }
 }
