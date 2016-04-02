@@ -79,13 +79,16 @@ public class FileClient {
 
                     byte[] data = CUDPClient.sendData(strServerAdd, aryOutput);
 
-                    String x = CNetworkManager.unmarshallString(data, 0).toString();
-
-                    String y = CNetworkManager.unmarshallString(data, x.length() + 4).toString();
+                    int z = CNetworkManager.unmarshallInt(data, 0);
                     
+                    String x = CNetworkManager.unmarshallString(data, 4).toString();
+
+                    String y = CNetworkManager.unmarshallString(data, x.length() + 8).toString();
+
+                    System.out.println(z);
                     System.out.println(x);
                     System.out.println(y);
-                    System.out.println(CNetworkManager.unmarshallString(data, x.length() + y.length() + 8));
+                    System.out.println(CNetworkManager.unmarshallLong(data, x.length() + y.length() + 12));
 
                     break;
                 case WRITE:
@@ -132,11 +135,15 @@ public class FileClient {
                     aryOutput = CClientManager.handleRenameOperation(strFile, strFileNew);
 
                     CUDPClient.sendData(strServerAdd, aryOutput);
+                    break;
+                case ACK:
+                    break;
                 default:
                     System.out.println("Invalid Choice");
+                    break;
             }
 
-        } while (intChoice != 6);
+        } while (intChoice < 7);
 
         System.out.println("\nThank you for using the application.");
     }
@@ -152,8 +159,9 @@ public class FileClient {
         System.out.println("2. Write File Data");
         System.out.println("3. Delete File Data");
         System.out.println("4. Create New File");
-        System.out.println("5. Monitor File Changes");
-        System.out.println("6. Exit the application");
+        System.out.println("5. Move/Rename File");
+        System.out.println("6. Monitor File");
+        System.out.println("7. Exit the application");
     }
 
     private static int getIntChoice() {
