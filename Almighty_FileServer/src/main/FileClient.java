@@ -30,7 +30,7 @@ public class FileClient {
     	
     	byte[] arrBytes = CServerManager.performOperation(
     			CClientManager.handleReadOperation(
-    					"subDir1_2/abcdefg.txt", 50, 99));
+    					"subDir1_2/abcdefg.txt", 0, 5));
     	
     	int offset = 0;
     	String resultStr = CNetworkManager.unmarshallString(arrBytes, offset).toString();
@@ -40,6 +40,13 @@ public class FileClient {
     	
     	System.out.println(resultStr);
     	System.out.println(readContents);
+    	
+    	arrBytes = CServerManager.performOperation(
+    			CClientManager.handleRenameOperation(
+    					"subDir1_1/abc.txt", "subDir1_3/abc.txt"));
+    	
+    	/*resultStr = CNetworkManager.unmarshallString(arrBytes, 0).toString();
+    	System.out.println(resultStr);*/
     	
         /*System.out.println("Initalizing system..\n");
 

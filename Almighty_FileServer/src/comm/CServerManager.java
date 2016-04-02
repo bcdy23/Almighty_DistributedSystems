@@ -38,6 +38,8 @@ public class CServerManager {
 			break;
 			
 		case DELETE:
+			result = deleteFromFile(pAryData, offset);
+			addToResult(lstBytes, marshallString(result));
 			break;
 			
 		case ERROR:
@@ -47,6 +49,8 @@ public class CServerManager {
 			break;
 			
 		case MOVE:
+			result = moveOrRenameFile(pAryData, offset);
+			addToResult(lstBytes, marshallString(result));
 			break;
 			
 		case READ:
@@ -60,7 +64,8 @@ public class CServerManager {
 			break;
 			
 		case WRITE:
-			
+			result = writeToFile(pAryData, offset);
+			addToResult(lstBytes, marshallString(result));
 			break;
 			
 		default:
@@ -115,24 +120,67 @@ public class CServerManager {
     	int fileOffset = unmarshallInt(pAryData, offset);
     	offset += 4;
     	
-    	int numBytesToRead = unmarshallInt(pAryData, offset);
-    	offset += 4;
+    	String data = unmarshallString(pAryData, offset).toString();
     	
-    	/*IO_STATUS ioStatus = CFileFactory.readFromFile(
-    			strPathName, fileOffset, numBytesToRead, sb);
+    	IO_STATUS ioStatus = CFileFactory.writeToFile(strPathName, fileOffset, data);
 		
 		switch (ioStatus) {
 		case FILE_NOT_FOUND:
-			return "READ ERROR: FILE NOT FOUND LA!";
+			return "WRITE ERROR: FILE NOT FOUND LA!";
 		case OFFSET_EXCEEDS_LENGTH:
-			return "READ ERROR: OFFSET EXCEEDS LENGTH LA! Please contact King Chody for further assistance.";
+			return "WRITE ERROR: OFFSET EXCEEDS LENGTH LA! Please contact King Chody for further assistance.";
 		case SUCCESS:
-			return "Read data from '" + strPathName + "' successfully.";
+			return "Written data to '" + strPathName + "' successfully.";
 		default:
 			return "";
-		}*/
+		}
+    }
+    
+    private static String deleteFromFile(byte[] pAryData, int offset) throws IOException {
     	
-    	return "";
+    	String strPathName = unmarshallString(pAryData, offset).toString();
+    	offset += strPathName.length() + 4;
+    	
+    	int fileOffset = unmarshallInt(pAryData, offset);
+    	offset += 4;
+    	
+    	int numBytesToDelete = unmarshallInt(pAryData, offset);
+    	
+    	IO_STATUS ioStatus = CFileFactory.deleteFromFile(
+    			strPathName, fileOffset, numBytesToDelete);
+		
+		switch (ioStatus) {
+		case FILE_NOT_FOUND:
+			return "DELETE ERROR: FILE NOT FOUND LA!";
+		case OFFSET_EXCEEDS_LENGTH:
+			return "DELETE ERROR: OFFSET EXCEEDS LENGTH LA! Please contact King Chody for further assistance.";
+		case SUCCESS:
+			return "Deleted data from '" + strPathName + "' successfully.";
+		default:
+			return "";
+		}
+    }
+    
+    private static String moveOrRenameFile(byte[] pAryData, int offset) throws IOException {
+    	
+    	String strPathNameOld = unmarshallString(pAryData, offset).toString();
+    	offset += strPathNameOld.length() + 4;
+    	
+    	String strPathNameNew = unmarshallString(pAryData, offset).toString();
+    	
+    	IO_STATUS ioStatus = CFileFactory.moveOrRenameFile(strPathNameOld, strPathNameNew);
+		
+		switch (ioStatus) {
+		case FILE_NOT_FOUND:
+			return "MOVE/RENAME ERROR: FILE NOT FOUND LA!";
+		case FILE_NAME_ALREADY_EXISTS:
+			return "MOVE/RENAME ERROR: File with same name exists at destination.";
+		case SUCCESS:
+			return "Moved/Renamed from '" + strPathNameOld + "' to '"
+					+ strPathNameNew + "' successfully.";
+		default:
+			return "";
+		}
     }
     
     private static void addToResult(ArrayList<Byte> lstBytes, byte[] arrBytes) {
