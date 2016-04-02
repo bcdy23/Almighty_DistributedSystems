@@ -2,9 +2,11 @@ package comm;
 
 import static comm.CNetworkManager.unmarshallInt;
 import static comm.CNetworkManager.unmarshallString;
+import static comm.CNetworkManager.unmarshallLong;
 import static comm.CNetworkManager.marshallInt;
 import static comm.CNetworkManager.marshallString;
 import static comm.CNetworkManager.marshallLong;
+
 import io.CFileFactory;
 import io.CFileFactory.IO_STATUS;
 
@@ -125,6 +127,13 @@ public class CServerManager {
 			printCodeMsg(arrBytes);
 			break;
 			
+		case LASTMODI:
+			getLastModified(pAryData, offset, lstBytes);
+			
+			arrBytes = convertResult(lstBytes);
+			printCodeLastModi(arrBytes);
+			break;
+			
 		default:
 			break;
         }
@@ -170,8 +179,12 @@ public class CServerManager {
 			addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
 			addToResult(lstBytes, ("Read data from '" + strPathName + "' successfully."));
 			addToResult(lstBytes, sb.toString());
+			
 			long lastModifiedTime = CFileFactory.getLastModifiedTime(strPathName);
 			addToResult(lstBytes, marshallLong(lastModifiedTime));
+			
+			long fileSize = CFileFactory.getFileSize(strPathName);
+			addToResult(lstBytes, marshallLong(fileSize));
 			break;
 		default:
 			break;
@@ -202,6 +215,9 @@ public class CServerManager {
 		case SUCCESS:
 			addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
 			addToResult(lstBytes, "Written data to '" + strPathName + "' successfully.");
+			
+			long fileSize = CFileFactory.getFileSize(strPathName);
+			addToResult(lstBytes, marshallLong(fileSize));
 			break;
 		default:
 			break;
@@ -233,6 +249,9 @@ public class CServerManager {
 		case SUCCESS:
 			addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
 			addToResult(lstBytes, "Deleted data from '" + strPathName + "' successfully.");
+			
+			long fileSize = CFileFactory.getFileSize(strPathName);
+			addToResult(lstBytes, marshallLong(fileSize));
 			break;
 		default:
 			break;
@@ -267,6 +286,27 @@ public class CServerManager {
 		}
     }
     
+	private static void getLastModified(byte[] pAryData, int offset,
+			ArrayList<Byte> lstBytes) throws IOException {
+
+		String strPathName = unmarshallString(pAryData, offset).toString();
+    	IO_STATUS ioStatus = CFileFactory.findFile(strPathName);
+		
+		switch (ioStatus) {
+		case FILE_NOT_FOUND:
+			addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
+			addToResult(lstBytes, marshallLong(0));
+			break;
+		case SUCCESS:
+			addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
+			addToResult(lstBytes, marshallLong(
+					CFileFactory.getLastModifiedTime(strPathName)));
+			break;
+		default:
+			break;
+		}
+	}
+    
     private static void addToResult(ArrayList<Byte> lstBytes, String str) {
     	addToResult(lstBytes, marshallString(str));
     }
@@ -297,7 +337,6 @@ public class CServerManager {
 		un_offset += 4;
 		
 		String un_msg = unmarshallString(arrBytes, un_offset).toString();
-		un_offset += (4 + un_msg.length());
 		
 		System.out.printf("Result: %-12s\tMsg: %-40s%n%n", str_un_code, un_msg);
     }
@@ -317,5 +356,18 @@ public class CServerManager {
 		
 		System.out.printf("Result: %-12s\tMsg: %-40s\tContents: %-80s%n%n",
 				str_un_code, un_msg, un_contents);
+    }
+    
+    private static void printCodeLastModi(byte[] arrBytes) {
+    	
+    	int un_offset = 0;
+		
+		int un_code = unmarshallInt(arrBytes, un_offset);
+		String str_un_code = ECommand.getCommand(un_code).toString();
+		un_offset += 4;
+		
+		long un_lastModi = unmarshallLong(arrBytes, un_offset);
+		
+		System.out.printf("Result: %-12s\tLast Modified: %-20d%n%n", str_un_code, un_lastModi);
     }
 }

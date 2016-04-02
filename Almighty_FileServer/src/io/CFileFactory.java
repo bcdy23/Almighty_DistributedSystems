@@ -266,6 +266,17 @@ public class CFileFactory {
         return IO_STATUS.SUCCESS;
 	}
 	
+	public static IO_STATUS findFile(String pathname) throws IOException {
+		
+		objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
+        Path objFilePath = objFolderPath.resolve(pathname);
+        if(!Files.exists(objFilePath)) {
+        	return IO_STATUS.FILE_NOT_FOUND;
+        }
+        
+        return IO_STATUS.SUCCESS;
+	}
+	
 	public static long getLastModifiedTime(String pathname) throws IOException {
 		
 		objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
@@ -273,6 +284,15 @@ public class CFileFactory {
 		BasicFileAttributes attrs = Files.readAttributes(objFilePath, BasicFileAttributes.class);
 		
 		return attrs.lastModifiedTime().toMillis();
+	}
+	
+	public static long getFileSize(String pathname) throws IOException {
+		
+		objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
+        Path objFilePath = objFolderPath.resolve(pathname);
+		BasicFileAttributes attrs = Files.readAttributes(objFilePath, BasicFileAttributes.class);
+		
+		return attrs.size();
 	}
     
     public enum IO_STATUS {
