@@ -9,6 +9,7 @@ import client.CClientManager;
 
 import comm.CNetworkManager;
 import comm.CUDPClient;
+import static comm.CUDPClient.connectionEstablish;
 import comm.ECommand;
 
 import java.io.IOException;
@@ -26,6 +27,8 @@ public class FileClient {
      * @param args the command line arguments
      */
     public static void main(String[] args) throws IOException {
+
+        String strServerAdd = "172.22.248.33";
 
 //        byte[] arrBytes = CServerManager.performOperation(
 //                CClientManager.handleReadOperation(
@@ -48,6 +51,8 @@ public class FileClient {
 //        System.out.println(resultStr);
         System.out.println("Initalizing system..\n");
 
+        connectionEstablish(strServerAdd);
+
         System.out.println("\nSystem initialization completed!");
 
         System.out.println("\nWelcome to Almighty Distributed File System");
@@ -59,8 +64,6 @@ public class FileClient {
         int intCount;
 
         byte[] aryOutput;
-
-        String strServerAdd = "172.22.248.33";
 
         do {
             displayMainMenu();
@@ -78,7 +81,7 @@ public class FileClient {
                     byte[] data = CUDPClient.sendData(strServerAdd, aryOutput);
 
                     int z = CNetworkManager.unmarshallInt(data, 0);
-                    
+
                     String x = CNetworkManager.unmarshallString(data, 4).toString();
 
                     String y = CNetworkManager.unmarshallString(data, x.length() + 8).toString();
@@ -137,7 +140,7 @@ public class FileClient {
                 case ACK:
                     break;
                 case LASTMODI:
-                    
+
                     break;
                 case EXIT:
                     break;
@@ -164,7 +167,7 @@ public class FileClient {
         System.out.println("4. Create New File");
         System.out.println("5. Move/Rename File");
         System.out.println("6. Monitor File");
-        System.out.println("7. Exit the application");
+        System.out.println("99. Exit the application");
     }
 
     private static int getIntChoice() {

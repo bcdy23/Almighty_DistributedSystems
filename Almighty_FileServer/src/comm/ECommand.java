@@ -15,6 +15,7 @@ public enum ECommand {
     ERROR(8),
     UPDATE(9),
     LASTMODI(10),
+    CONN(98),
     EXIT(99);
 
     private final int intCode;
