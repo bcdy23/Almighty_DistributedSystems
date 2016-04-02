@@ -28,6 +28,7 @@ public class FileClient {
      */
     public static void main(String[] args) throws IOException {
     	
+<<<<<<< HEAD
     	byte[] arrBytes = CServerManager.performOperation(
     			CClientManager.handleReadOperation(
     					"subDir1_2/abcdefg.txt", 0, 5));
@@ -49,6 +50,7 @@ public class FileClient {
     	System.out.println(resultStr);*/
     	
         /*System.out.println("Initalizing system..\n");
+>>>>>>> f3b52d3877c28fc7efa871d2096f187ef9d7203f
 
         System.out.println("\nSystem initialization completed!");
 
@@ -65,11 +67,13 @@ public class FileClient {
                 case READ:
 
                     strFile = getStringChoice();
-
                     int intOffset = getIntChoice();
+                    int intCount = getIntChoice();
 
-                    String strData = getStringChoice();
-
+                    
+                    
+                    
+                    
                     break;
                 case WRITE:
 
@@ -92,7 +96,7 @@ public class FileClient {
 
         } while (intChoice != 6);
 
-        System.out.println("\nThank you for using the application.");*/
+        System.out.println("\nThank you for using the application.");
     }
 
     private static void displayMainMenu() {

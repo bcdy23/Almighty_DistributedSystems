@@ -5,7 +5,6 @@
  */
 package comm;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -26,27 +25,23 @@ public class CUDPServer {
 
     public void execute() throws IOException {
 
-        byte[] aryBuffer = new byte[256];
+        while (true) {
+            byte[] aryBuffer = new byte[1024];
 
-        DatagramPacket objPacket = new DatagramPacket(aryBuffer, aryBuffer.length);
-        socket.receive(objPacket);
-        
-        
-        
-        String received = new String(objPacket.getData(), 0, objPacket.getLength());
-        System.out.println("Recieved : " + received);
+            DatagramPacket objPacket = new DatagramPacket(aryBuffer, aryBuffer.length);
+            socket.receive(objPacket);
 
-        String objResponse = "Hello Prof Gosu";
+            byte[] aryOutput = CServerManager.performOperation(objPacket.getData());
 
-        InetAddress objAddress = objPacket.getAddress();
+            InetAddress objAddress = objPacket.getAddress();
 
-        int intPort = objPacket.getPort();
+            int intPort = objPacket.getPort();
 
-        objPacket = new DatagramPacket(objResponse.getBytes(), objResponse.length(), objAddress, intPort);
-        
-        socket.send(objPacket);
-        
-        socket.close();
+            objPacket = new DatagramPacket(aryOutput, aryOutput.length, objAddress, intPort);
+
+            socket.send(objPacket);
+        }
+        //socket.close();
 
     }
 }
