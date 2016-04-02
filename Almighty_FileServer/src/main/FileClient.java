@@ -6,10 +6,8 @@
 package main;
 
 import client.CClientManager;
+
 import comm.CNetworkManager;
-import comm.CServerManager;
-import static comm.CNetworkManager.marshallString;
-import static comm.CNetworkManager.unmarshallString;
 import comm.CUDPClient;
 import comm.ECommand;
 
