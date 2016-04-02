@@ -18,7 +18,9 @@ public enum ECommand {
     MONITOR(6),
     ACK(7),
     ERROR(8),
-    UPDATE(9);
+    UPDATE(9),
+    LASTMODI(10),
+    EXIT(99);
 
     private final int intCode;
 

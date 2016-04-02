@@ -171,4 +171,27 @@ public class CClientManager {
         return aryOutput;
     }
 
+        public static byte[] handleLastModiOperation(String pStrFile) {
+
+        byte[] aryCommand = marshallInt(ECommand.MONITOR.getCode());
+        byte[] aryFile = marshallString(pStrFile);
+
+        List<byte[]> lstOutput = new ArrayList<>(2);
+
+        lstOutput.add(aryCommand);
+        lstOutput.add(aryFile);
+
+        byte[] aryOutput = new byte[aryCommand.length + aryFile.length];
+
+        int intOffset = 0;
+
+        for (byte[] aryData : lstOutput) {
+            System.arraycopy(aryData, 0, aryOutput, intOffset, aryData.length);
+
+            intOffset += aryData.length;
+        }
+
+        return aryOutput;
+    }
+    
 }

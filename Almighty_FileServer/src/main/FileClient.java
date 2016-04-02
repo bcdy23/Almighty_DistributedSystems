@@ -138,12 +138,17 @@ public class FileClient {
                     break;
                 case ACK:
                     break;
+                case LASTMODI:
+                    
+                    break;
+                case EXIT:
+                    break;
                 default:
                     System.out.println("Invalid Choice");
                     break;
             }
 
-        } while (intChoice < 7);
+        } while (intChoice != 99);
 
         System.out.println("\nThank you for using the application.");
     }

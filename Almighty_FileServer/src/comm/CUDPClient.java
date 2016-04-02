@@ -22,7 +22,7 @@ public class CUDPClient {
 
     private static int intSeqId = 0;
 
-    private static final int intFailure = 7;
+    private static final int intFailure = 5;
 
     public static byte[] sendData(String pStrAdd, byte[] pAryData) throws SocketException, UnknownHostException, IOException {
 
@@ -53,19 +53,21 @@ public class CUDPClient {
 
         while (true) {
             try {
-                while (CRandomGenerator.getInt(1, 10) < intFailure) {
-                    System.out.println("Recieved packet dropped");
-                }
                 socket.receive(response);
 
-                byte[] aryOutput = new byte[response.getData().length];
+                if (CRandomGenerator.getInt(1, 10) < intFailure) {
+                    System.out.println("Recieved packet dropped");
+                    socket.send(packet);
+                } else {
+                    byte[] aryOutput = new byte[response.getData().length];
 
-                System.arraycopy(response.getData(), 0, aryOutput, 0, response.getData().length);
-                socket.close();
+                    System.arraycopy(response.getData(), 0, aryOutput, 0, response.getData().length);
+                    socket.close();
 
-                intSeqId++;
+                    intSeqId++;
 
-                return aryOutput;
+                    return aryOutput;
+                }
 
             } catch (SocketTimeoutException e) {
                 // resend
