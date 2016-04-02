@@ -6,13 +6,17 @@ import static comm.CNetworkManager.unmarshallLong;
 import static comm.CNetworkManager.marshallInt;
 import static comm.CNetworkManager.marshallString;
 import static comm.CNetworkManager.marshallLong;
-
 import io.CFileFactory;
 import io.CFileFactory.IO_STATUS;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
+import client.CClientManager;
 
 /**
  *
@@ -22,6 +26,80 @@ public class CServerManager {
 	
 	// IP Address - <Seq Num, Cached result>
 	private static HashMap<String, HashMap<Integer, byte[]>> _serverClientsCache = new HashMap<>();
+	
+	// File pathname - <IP Address, Server Time>
+	private static HashMap<String, HashMap<String, Long>> _serverFilesMonitor = new HashMap<>();
+	
+	public static void main(String[] args) throws IOException {
+		
+		String[] ipAddress = new String[]{"0.0.0.1", "0.0.0.2", "0.0.0.3"};
+		int seqNum = 0;
+		
+		for(String ip : ipAddress) {
+		
+			byte[] aryData = marshallInt(ECommand.CONN.getCode());
+	        byte[] arySeq = marshallInt(seqNum++);
+	
+	        byte[] arySent = combine(arySeq, aryData);
+	        
+	        performOperation(arySent, ip);
+		}
+		
+		byte[] aryOutput = CClientManager.handleCreateOperation("abc.txt");
+		byte[] arySeq = marshallInt(seqNum++);
+		aryOutput = combine(arySeq, aryOutput);
+		performOperation(aryOutput, ipAddress[2]);
+		
+		aryOutput = CClientManager.handleWriteOperation("abc.txt", 0, "Hello World!");
+		arySeq = marshallInt(seqNum++);
+		aryOutput = combine(arySeq, aryOutput);
+		performOperation(aryOutput, ipAddress[2]);
+		
+		aryOutput = CClientManager.handleReadOperation("abc.txt", 0, 100);
+		arySeq = marshallInt(seqNum++);
+		aryOutput = combine(arySeq, aryOutput);
+		performOperation(aryOutput, ipAddress[2]);
+        
+		aryOutput = CClientManager.handleMonitorOperation("abc.txt", 2000);
+		arySeq = marshallInt(seqNum++);
+		aryOutput = combine(arySeq, aryOutput);
+		performOperation(aryOutput, ipAddress[0]);
+		
+		aryOutput = CClientManager.handleMonitorOperation("abc.txt", 5000);
+		arySeq = marshallInt(seqNum++);
+		aryOutput = combine(arySeq, aryOutput);
+		performOperation(aryOutput, ipAddress[1]);
+		
+		// Client 1 & 2 updated
+		aryOutput = CClientManager.handleWriteOperation("abc.txt", 12, " Bryden is so shady!");
+		arySeq = marshallInt(seqNum++);
+		aryOutput = combine(arySeq, aryOutput);
+		performOperation(aryOutput, ipAddress[2]);
+		
+		try {Thread.sleep(3000);} catch (InterruptedException e) {}
+		System.out.println("3 seconds has elapsed on the server......\n");
+		
+		aryOutput = CClientManager.handleRenameOperation("abc.txt", "def.txt");
+		arySeq = marshallInt(seqNum++);
+		aryOutput = combine(arySeq, aryOutput);
+		performOperation(aryOutput, ipAddress[2]);
+		
+		// Client 2 updated
+		aryOutput = CClientManager.handleDeleteOperation("def.txt", 0, 13);
+		arySeq = marshallInt(seqNum++);
+		aryOutput = combine(arySeq, aryOutput);
+		performOperation(aryOutput, ipAddress[2]);
+	}
+	
+	private static byte[] combine(byte[] seq, byte[] data) {
+		
+		byte[] arySent = new byte[data.length + seq.length];
+		
+        System.arraycopy(seq, 0, arySent, 0, seq.length);
+        System.arraycopy(data, 0, arySent, seq.length, data.length);
+        
+        return arySent;
+	}
 
     public static byte[] performOperation(byte[] pAryData, String pStrAddr) throws IOException {
 
@@ -31,13 +109,13 @@ public class CServerManager {
         int seqNumber = unmarshallInt(pAryData, offset);
         offset += 4;
         
-        HashMap<Integer, byte[]> _clientCache = _serverClientsCache.get(pStrAddr);
-        if(_clientCache == null) {
-        	_clientCache = new HashMap<>();
-        	_serverClientsCache.put(pStrAddr, _clientCache);
+        HashMap<Integer, byte[]> clientCache = _serverClientsCache.get(pStrAddr);
+        if(clientCache == null) {
+        	clientCache = new HashMap<>();
+        	_serverClientsCache.put(pStrAddr, clientCache);
         }
     	
-        // Need to provide start offset
+        // Check the command
         ECommand objCommand = ECommand.getCommand(unmarshallInt(pAryData, offset));
         offset += 4;
         
@@ -52,12 +130,13 @@ public class CServerManager {
         switch(objCommand) {
         
         case CONN:
-         	_clientCache.clear();
+         	clientCache.clear();
          	
          	addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
          	arrBytes = convertResult(lstBytes);
          	
          	System.out.println("Client '" + pStrAddr + "' connected to server.\n");
+         	
         	break;
         
 		case ACK:
@@ -68,11 +147,12 @@ public class CServerManager {
 			
 			arrBytes = convertResult(lstBytes);
 			printCodeMsg(arrBytes);
+			
 			break;
 			
 		case DELETE:
 			// Non-Idempotent
-			arrBytes = _clientCache.get(seqNumber);
+			arrBytes = clientCache.get(seqNumber);
 			if(arrBytes != null) {
 				
 				System.out.println("One-update semantics, retrieving from cache..");
@@ -84,8 +164,11 @@ public class CServerManager {
 			deleteFromFile(pAryData, offset, lstBytes);
 			
 			arrBytes = convertResult(lstBytes);
-			_clientCache.put(seqNumber, arrBytes);
+			clientCache.put(seqNumber, arrBytes);
 			printCodeMsg(arrBytes);
+			
+			// Update clients monitoring this file (if any)
+			update(unmarshallString(pAryData, offset).toString(), pStrAddr, arrBytes);
 			
 			break;
 			
@@ -93,11 +176,17 @@ public class CServerManager {
 			break;
 			
 		case MONITOR:
+			// Monitors a specified file
+			monitorFile(pAryData, offset, lstBytes, pStrAddr);
+			
+         	arrBytes = convertResult(lstBytes);
+         	printCodeMsg(arrBytes);
+			
 			break;
 			
 		case MOVE:
 			// Non-Idempotent
-			arrBytes = _clientCache.get(seqNumber);
+			arrBytes = clientCache.get(seqNumber);
 			if(arrBytes != null) {
 				
 				System.out.println("One-update semantics, retrieving from cache..");
@@ -109,7 +198,7 @@ public class CServerManager {
 			moveOrRenameFile(pAryData, offset, lstBytes);
 			
 			arrBytes = convertResult(lstBytes);
-			_clientCache.put(seqNumber, arrBytes);
+			clientCache.put(seqNumber, arrBytes);
 			printCodeMsg(arrBytes);
 			
 			break;
@@ -119,14 +208,16 @@ public class CServerManager {
 			
 			arrBytes = convertResult(lstBytes);
 			printCodeMsgContents(arrBytes);
+			
 			break;
 			
 		case UPDATE:
+			// Do what sia?
 			break;
 			
 		case WRITE:
 			// Non-Idempotent
-			arrBytes = _clientCache.get(seqNumber);
+			arrBytes = clientCache.get(seqNumber);
 			if(arrBytes != null) {
 				
 				System.out.println("One-update semantics, retrieving from cache..");
@@ -138,8 +229,12 @@ public class CServerManager {
 			writeToFile(pAryData, offset, lstBytes);
 			
 			arrBytes = convertResult(lstBytes);
-			_clientCache.put(seqNumber, arrBytes);
+			clientCache.put(seqNumber, arrBytes);
 			printCodeMsg(arrBytes);
+			
+			// Update clients monitoring this file (if any)
+			update(unmarshallString(pAryData, offset).toString(), pStrAddr, arrBytes);
+			
 			break;
 			
 		case LASTMODI:
@@ -147,6 +242,7 @@ public class CServerManager {
 			
 			arrBytes = convertResult(lstBytes);
 			printCodeLastModi(arrBytes);
+			
 			break;
 			
 		default:
@@ -295,6 +391,8 @@ public class CServerManager {
 			addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
 			addToResult(lstBytes, "Moved/Renamed from '" + strPathNameOld + "' to '"
 					+ strPathNameNew + "' successfully.");
+			
+			monitorMovedOrRenamed(strPathNameOld, strPathNameNew);
 			break;
 		default:
 			break;
@@ -320,6 +418,95 @@ public class CServerManager {
 		default:
 			break;
 		}
+	}
+	
+	/** NOTE: Seq number, Cmd, File path name, Period (ms) **/
+	private static void monitorFile(byte[] pAryData, int offset,
+			ArrayList<Byte> lstBytes, String strIPAddr) {
+		
+		String strPathName = unmarshallString(pAryData, offset).toString();
+		offset += strPathName.length() + 4;
+		
+		// Period in milliseconds (int)
+		int period = unmarshallInt(pAryData, offset);
+		
+		HashMap<String, Long> fileMonitor = _serverFilesMonitor.get(strPathName);
+        if(fileMonitor == null) {
+        	fileMonitor = new HashMap<>();
+        	_serverFilesMonitor.put(strPathName, fileMonitor);
+        }
+        
+        fileMonitor.put(strIPAddr, System.currentTimeMillis() + period);
+        
+        addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
+     	addToResult(lstBytes, ("Client '" + strIPAddr + "' monitoring '" +
+     			strPathName + "' for " + period + " ms."));
+	}
+	
+	private static void update(String strPathName, String strIPAddr, byte[] arrBytes) throws IOException {
+		
+		HashMap<String, Long> fileMonitor = _serverFilesMonitor.get(strPathName);
+        if(fileMonitor == null) {
+        	return;
+        }
+        
+        // Remove expired monitors for the specified file
+        long currSysTime = System.currentTimeMillis();
+        Iterator<Map.Entry<String, Long>> iter = fileMonitor.entrySet().iterator();
+        while(iter.hasNext()) {
+        	
+        	Map.Entry<String, Long> mapEntry = iter.next();
+        	if(mapEntry.getValue() < currSysTime) {
+        		
+        		iter.remove();
+        	}
+        }
+        
+        // Remove from list of monitored files, and do nothing
+        if(fileMonitor.isEmpty()) {
+        	_serverFilesMonitor.remove(strPathName);
+        	return;
+        }
+        
+        int up_offset = 0;
+        
+        int up_code = unmarshallInt(arrBytes, up_offset);
+		up_offset += 4;
+		
+		// Changes were made successfully to a monitored file
+		if(ECommand.getCommand(up_code) == ECommand.ACK) {
+		
+			// Get the (possibly) updated file contents
+			StringBuilder sb = new StringBuilder();
+			CFileFactory.readFromFile(
+					strPathName, 0, CFileFactory.getFileSize(strPathName), sb);
+			
+			// NOTE: strIPAddr contains IP address of client who made the changes
+			System.out.println("File at '" + strPathName + "' changed by client '" +
+					strIPAddr + "'. Updating all clients monitoring this file.");
+			System.out.println("The updated contents: " + sb.toString() + "\n");
+			
+			// Update all clients monitoring this file
+			Set<String> lstClients = fileMonitor.keySet();
+			// TODO: Remove (This is just for testing)
+			// TODO: Multicast
+			for (String ip : lstClients) {
+				System.out.println("I am the server. I am telling client '" + ip
+						+ "' that the file at '" + strPathName
+						+ "' has been changed.");
+			}
+			System.out.println();
+		}
+	}
+	
+	private static void monitorMovedOrRenamed(String strPathNameOld, String strPathNameNew) {
+		
+		HashMap<String, Long> fileMonitor = _serverFilesMonitor.get(strPathNameOld);
+        if(fileMonitor != null) {
+        	
+        	_serverFilesMonitor.remove(strPathNameOld);
+        	_serverFilesMonitor.put(strPathNameNew, fileMonitor);
+        }
 	}
     
     private static void addToResult(ArrayList<Byte> lstBytes, String str) {

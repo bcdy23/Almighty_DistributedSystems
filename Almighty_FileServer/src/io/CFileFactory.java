@@ -286,13 +286,13 @@ public class CFileFactory {
 		return attrs.lastModifiedTime().toMillis();
 	}
 	
-	public static long getFileSize(String pathname) throws IOException {
+	public static int getFileSize(String pathname) throws IOException {
 		
 		objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
         Path objFilePath = objFolderPath.resolve(pathname);
 		BasicFileAttributes attrs = Files.readAttributes(objFilePath, BasicFileAttributes.class);
 		
-		return attrs.size();
+		return ((int) attrs.size());
 	}
     
     public enum IO_STATUS {
