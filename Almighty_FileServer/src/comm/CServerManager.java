@@ -109,6 +109,7 @@ public class CServerManager {
 		case SUCCESS:
 			addToResult(lstBytes, "SUCCESS");
 			addToResult(lstBytes, "Read data from '" + strPathName + "' successfully.");
+			addToResult(lstBytes, sb.toString());
 			long lastModifiedTime = CFileFactory.getLastModifiedTime(strPathName);
 			addToResult(lstBytes, marshallLong(lastModifiedTime));
 			break;
