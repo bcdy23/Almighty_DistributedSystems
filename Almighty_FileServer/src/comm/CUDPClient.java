@@ -18,25 +18,26 @@ import java.net.UnknownHostException;
  */
 public class CUDPClient {
 
-    public static void sendData(String pStrAdd, String pStrData) throws SocketException, UnknownHostException, IOException {
+    public static byte[] sendData(String pStrAdd, byte[] pAryData) throws SocketException, UnknownHostException, IOException {
         // get a datagram socket
         DatagramSocket socket = new DatagramSocket();
 
         // send request
-        byte[] buf = new byte[256];
-        
+        byte[] buf = new byte[1024];
+
         InetAddress address = InetAddress.getByName(pStrAdd);
-        DatagramPacket packet = new DatagramPacket(pStrData.getBytes(), pStrData.length(), address, 4445);
+        DatagramPacket packet = new DatagramPacket(pAryData, pAryData.length, address, 4445);
         socket.send(packet);
 
         // get response
         packet = new DatagramPacket(buf, buf.length);
         socket.receive(packet);
 
-        // display response
-        String received = new String(packet.getData(), 0, packet.getLength());
-        System.out.println("Recieved : " + received);
+        byte[] aryOutput = new byte[packet.getData().length];
 
+        System.arraycopy(packet.getData(), 0, aryOutput, 0, packet.getData().length);
         socket.close();
+
+        return aryOutput;
     }
 }

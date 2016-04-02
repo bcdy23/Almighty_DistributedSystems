@@ -28,20 +28,20 @@ public class FileClient {
      */
     public static void main(String[] args) throws IOException {
     	
-    	byte[] arrBytes = CServerManager.performOperation(
-    			CClientManager.handleReadOperation(
-    					"subDir1_2/abcdefg.txt", 50, 99));
+//    	byte[] arrBytes = CServerManager.performOperation(
+//    			CClientManager.handleReadOperation(
+//    					"subDir1_2/abcdefg.txt", 50, 99));
+//    	
+//    	int offset = 0;
+//    	String resultStr = CNetworkManager.unmarshallString(arrBytes, offset).toString();
+//    	offset += 4 + resultStr.length();
+//    	
+//    	String readContents = CNetworkManager.unmarshallString(arrBytes, offset).toString();
+//    	
+//    	System.out.println(resultStr);
+//    	System.out.println(readContents);
     	
-    	int offset = 0;
-    	String resultStr = CNetworkManager.unmarshallString(arrBytes, offset).toString();
-    	offset += 4 + resultStr.length();
-    	
-    	String readContents = CNetworkManager.unmarshallString(arrBytes, offset).toString();
-    	
-    	System.out.println(resultStr);
-    	System.out.println(readContents);
-    	
-        /*System.out.println("Initalizing system..\n");
+        System.out.println("Initalizing system..\n");
 
         System.out.println("\nSystem initialization completed!");
 
@@ -58,11 +58,13 @@ public class FileClient {
                 case READ:
 
                     strFile = getStringChoice();
-
                     int intOffset = getIntChoice();
+                    int intCount = getIntChoice();
 
-                    String strData = getStringChoice();
-
+                    
+                    
+                    
+                    
                     break;
                 case WRITE:
 
@@ -85,7 +87,7 @@ public class FileClient {
 
         } while (intChoice != 6);
 
-        System.out.println("\nThank you for using the application.");*/
+        System.out.println("\nThank you for using the application.");
     }
 
     private static void displayMainMenu() {

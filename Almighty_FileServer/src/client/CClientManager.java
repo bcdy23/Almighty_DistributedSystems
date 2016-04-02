@@ -148,7 +148,7 @@ public class CClientManager {
 
     public static byte[] handleRenameOperation(String pStrFile, String pStrFileNew) {
 
-        byte[] aryCommand = marshallInt(ECommand.RENAME.getCode());
+        byte[] aryCommand = marshallInt(ECommand.MOVE.getCode());
         byte[] aryFile = marshallString(pStrFile);
         byte[] aryFileNew = marshallString(pStrFileNew);
 
