@@ -131,6 +131,8 @@ public class CServerManager {
 		default:
 			return "";
 		}*/
+    	
+    	return "";
     }
     
     private static void addToResult(ArrayList<Byte> lstBytes, byte[] arrBytes) {

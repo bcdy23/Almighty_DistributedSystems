@@ -5,10 +5,14 @@
  */
 package main;
 
+import client.CClientManager;
 import comm.CNetworkManager;
+import comm.CServerManager;
 import static comm.CNetworkManager.marshallString;
 import static comm.CNetworkManager.unmarshallString;
 import comm.ECommand;
+
+import java.io.IOException;
 import java.util.Scanner;
 
 /**
@@ -22,8 +26,22 @@ public class FileClient {
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
-        System.out.println("Initalizing system..\n");
+    public static void main(String[] args) throws IOException {
+    	
+    	byte[] arrBytes = CServerManager.performOperation(
+    			CClientManager.handleReadOperation(
+    					"subDir1_2/abcdefg.txt", 50, 99));
+    	
+    	int offset = 0;
+    	String resultStr = CNetworkManager.unmarshallString(arrBytes, offset).toString();
+    	offset += 4 + resultStr.length();
+    	
+    	String readContents = CNetworkManager.unmarshallString(arrBytes, offset).toString();
+    	
+    	System.out.println(resultStr);
+    	System.out.println(readContents);
+    	
+        /*System.out.println("Initalizing system..\n");
 
         System.out.println("\nSystem initialization completed!");
 
@@ -67,7 +85,7 @@ public class FileClient {
 
         } while (intChoice != 6);
 
-        System.out.println("\nThank you for using the application.");
+        System.out.println("\nThank you for using the application.");*/
     }
 
     private static void displayMainMenu() {
