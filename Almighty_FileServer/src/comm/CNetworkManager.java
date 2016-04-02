@@ -35,7 +35,15 @@ public class CNetworkManager {
 
     public static StringBuilder unmarshallString(byte[] pAryData, int pIntOffset) {
 
+        int intLength = unmarshallInt(pAryData, pIntOffset);
+
         StringBuilder objSB = new StringBuilder();
+
+        int intCount = 0;
+
+        while (intCount < intLength) {
+            objSB.append((char) pAryData[pIntOffset + intCount]);
+        }
 
         return objSB;
     }
@@ -46,7 +54,11 @@ public class CNetworkManager {
 
         byte[] aryData = new byte[intLength + 4];
 
-        return new byte[4];
+        System.arraycopy(marshallInt(intLength), 0, aryData, 0, 4);
+
+        System.arraycopy(pStrData.getBytes(), 0, aryData, 5, pStrData.length());
+
+        return aryData;
     }
 
 }
