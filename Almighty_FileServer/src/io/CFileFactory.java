@@ -195,6 +195,54 @@ public class CFileFactory {
 		sbc.close();
 		return IO_STATUS.SUCCESS;
 	}
+	
+	public static IO_STATUS deleteFromFile(String pathname, int offset, int numBytes) throws IOException {
+
+		objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
+        Path objFilePath = objFolderPath.resolve(pathname);
+        if(!Files.exists(objFilePath)) {
+        	return IO_STATUS.FILE_NOT_FOUND;
+        }
+		
+        // Gets the SeekableByteChannel for writing to file
+		SeekableByteChannel sbc = Files.newByteChannel(objFilePath,
+				StandardOpenOption.READ, StandardOpenOption.WRITE);
+		
+		// Tries to offset the current position in the file
+		if(offset > sbc.size()) {
+			
+			sbc.close();
+			return IO_STATUS.OFFSET_EXCEEDS_LENGTH;
+		}
+		else {
+			sbc.position(offset);
+		}
+		
+		long remaining = sbc.size() - sbc.position();
+		ByteBuffer rbb = ByteBuffer.allocate((int) remaining);
+		sbc.read(rbb);
+		String strAfterOffset = new String(rbb.array());
+		
+		// Remove from the contents the specified number of bytes
+		if (numBytes > strAfterOffset.length()) {
+			strAfterOffset = "";
+		} else {
+			strAfterOffset = strAfterOffset.substring(numBytes);
+		}
+		
+		long numDeletedBytes = remaining - strAfterOffset.length();
+		System.out.println("# of deleted bytes: " + numDeletedBytes);
+		
+		// Writes to the file (Moving the contents to replace deleted contents)
+		sbc.position(offset);
+		sbc.write(ByteBuffer.wrap(strAfterOffset.getBytes()));
+		
+		// Truncate based on actual number of deleted bytes
+		sbc.truncate(sbc.size() - numDeletedBytes);
+		
+		sbc.close();
+		return IO_STATUS.SUCCESS;
+	}
     
     public enum IO_STATUS {
     	
