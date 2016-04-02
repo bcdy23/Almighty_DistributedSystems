@@ -20,7 +20,7 @@ public enum ECommand {
     ERROR(8),
     UPDATE(9);
 
-    private int intCode = 0;
+    private final int intCode;
 
     ECommand(int pIntCode) {
         intCode = pIntCode;
@@ -28,5 +28,14 @@ public enum ECommand {
 
     public int getCode() {
         return intCode;
+    }
+
+    public static ECommand getCommand(int pIntCode) {
+        for (ECommand objType : ECommand.values()) {
+            if (objType.getCode() == pIntCode) {
+                return objType;
+            }
+        }
+        return null;
     }
 }

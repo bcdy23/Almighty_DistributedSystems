@@ -5,6 +5,8 @@
  */
 package main;
 
+import comm.CNetworkManager;
+import comm.ECommand;
 import java.util.Scanner;
 
 /**
@@ -29,10 +31,28 @@ public class FileClient {
 
         do {
             displayMainMenu();
-            intChoice = getChoice();
-            
-            
-            
+            intChoice = getIntChoice();
+
+            switch (ECommand.getCommand(intChoice)) {
+                case READ:
+
+                    break;
+                case WRITE:
+
+                    break;
+                case DELETE:
+
+                    break;
+                case CREATE:
+
+                    break;
+                case MONITOR:
+
+                    break;
+                default:
+                    System.out.println("Invalid Choice");
+            }
+
         } while (intChoice != 6);
 
         System.out.println("\nThank you for using the application.");
@@ -53,12 +73,18 @@ public class FileClient {
         System.out.println("6. Exit the application");
     }
 
-    private static int getChoice() {
+    private static int getIntChoice() {
         System.out.println("Please enter your choice: ");
         int intChoice = sc.nextInt();
         sc.nextLine();
 
         return intChoice;
+    }
+
+    private static String getStringChoice() {
+        System.out.println("Please enter your value: ");
+        
+        return sc.nextLine();
     }
 
 }
