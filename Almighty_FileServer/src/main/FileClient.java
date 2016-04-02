@@ -29,26 +29,25 @@ public class FileClient {
      */
     public static void main(String[] args) throws IOException {
 
-        byte[] arrBytes = CServerManager.performOperation(
-                CClientManager.handleReadOperation(
-                        "subDir1_2/abcdefg.txt", 0, 5));
-
-        int offset = 0;
-        String resultStr = CNetworkManager.unmarshallString(arrBytes, offset).toString();
-        offset += 4 + resultStr.length();
-
-        String readContents = CNetworkManager.unmarshallString(arrBytes, offset).toString();
-
-        System.out.println(resultStr);
-        System.out.println(readContents);
-
-        arrBytes = CServerManager.performOperation(
-                CClientManager.handleRenameOperation(
-                        "subDir1_1/abc.txt", "subDir1_1/abc123.txt"));
-
-        resultStr = CNetworkManager.unmarshallString(arrBytes, 0).toString();
-        System.out.println(resultStr);
-
+//        byte[] arrBytes = CServerManager.performOperation(
+//                CClientManager.handleReadOperation(
+//                        "subDir1_2/abcdefg.txt", 0, 5));
+//
+//        int offset = 0;
+//        String resultStr = CNetworkManager.unmarshallString(arrBytes, offset).toString();
+//        offset += 4 + resultStr.length();
+//
+//        String readContents = CNetworkManager.unmarshallString(arrBytes, offset).toString();
+//
+//        System.out.println(resultStr);
+//        System.out.println(readContents);
+//
+//        arrBytes = CServerManager.performOperation(
+//                CClientManager.handleRenameOperation(
+//                        "subDir1_1/abc.txt", "subDir1_1/abc123.txt"));
+//
+//        resultStr = CNetworkManager.unmarshallString(arrBytes, 0).toString();
+//        System.out.println(resultStr);
         System.out.println("Initalizing system..\n");
 
         System.out.println("\nSystem initialization completed!");
@@ -78,7 +77,15 @@ public class FileClient {
 
                     aryOutput = CClientManager.handleReadOperation(strFile, intOffset, intCount);
 
-                    CUDPClient.sendData(strServerAdd, aryOutput);
+                    byte[] data = CUDPClient.sendData(strServerAdd, aryOutput);
+
+                    String x = CNetworkManager.unmarshallString(data, 0).toString();
+
+                    String y = CNetworkManager.unmarshallString(data, x.length() + 4).toString();
+                    
+                    System.out.println(x);
+                    System.out.println(y);
+                    System.out.println(CNetworkManager.unmarshallString(data, x.length() + y.length() + 8));
 
                     break;
                 case WRITE:
