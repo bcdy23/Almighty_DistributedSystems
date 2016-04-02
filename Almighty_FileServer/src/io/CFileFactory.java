@@ -10,7 +10,6 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 
@@ -256,7 +255,7 @@ public class CFileFactory {
         }
         
         // Check if a file with similar name exists at the target destination
-        if(!Files.exists(objFilePathNew)) {
+        if(Files.exists(objFilePathNew)) {
         	return IO_STATUS.FILE_NAME_ALREADY_EXISTS;
         }
         
@@ -269,7 +268,12 @@ public class CFileFactory {
         // Move
         else {
         	
-        	Files.move(objFilePathOld, objFilePathNew.resolve(objFilePathOld.getFileName()));
+        	if(Files.notExists(objFilePathNew.getParent())) {
+            	createFolder(objFilePathNew.getParent());
+            }
+        	
+        	Files.move(objFilePathOld, objFilePathNew.getParent().resolve(
+        			objFilePathOld.getFileName()));
         }
         
         return IO_STATUS.SUCCESS;
