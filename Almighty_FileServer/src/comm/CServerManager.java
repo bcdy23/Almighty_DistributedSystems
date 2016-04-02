@@ -3,6 +3,8 @@ package comm;
 import static comm.CNetworkManager.unmarshallInt;
 import static comm.CNetworkManager.unmarshallString;
 import static comm.CNetworkManager.marshallString;
+import static comm.CNetworkManager.marshallLong;
+
 import io.CFileFactory;
 import io.CFileFactory.IO_STATUS;
 
@@ -108,8 +110,7 @@ public class CServerManager {
 			addToResult(lstBytes, "SUCCESS");
 			addToResult(lstBytes, "Read data from '" + strPathName + "' successfully.");
 			long lastModifiedTime = CFileFactory.getLastModifiedTime(strPathName);
-			// MARSHALL LONG
-			
+			addToResult(lstBytes, marshallLong(lastModifiedTime));
 			break;
 		default:
 			break;
