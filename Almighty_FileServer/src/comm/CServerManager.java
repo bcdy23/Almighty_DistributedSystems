@@ -2,31 +2,44 @@ package comm;
 
 import static comm.CNetworkManager.unmarshallInt;
 import static comm.CNetworkManager.unmarshallString;
+import static comm.CNetworkManager.marshallInt;
 import static comm.CNetworkManager.marshallString;
 import static comm.CNetworkManager.marshallLong;
-
 import io.CFileFactory;
 import io.CFileFactory.IO_STATUS;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  *
  * @author King Chody & Gosu the Minion
  */
 public class CServerManager {
+	
+	private static HashMap<String, byte[]> _serverCache = new HashMap<>();
 
     public static byte[] performOperation(byte[] pAryData, String pStrAddr) throws IOException {
 
         int offset = 0;
+        
+        // Get the sequence number
+        int seqNumber = unmarshallInt(pAryData, offset);
+        offset += 4;
     	
         // Need to provide start offset
-        ECommand objCommand = ECommand.getCommand(unmarshallInt(pAryData, 0));
+        ECommand objCommand = ECommand.getCommand(unmarshallInt(pAryData, offset));
         offset += 4;
+        
+        // Operation number, for caching non-idempotent actions
+        String strOpNum = pStrAddr + "_" + seqNumber;
+        System.out.printf("IP: %-15s\tSeq #: %-8d\tAction: %-12s%n",
+        		pStrAddr, seqNumber, objCommand.toString());
         
         // Byte arraylist for storing results
         ArrayList<Byte> lstBytes = new ArrayList<>();
+        byte[] arrBytes = null;
         
         switch(objCommand) {
         
@@ -35,10 +48,28 @@ public class CServerManager {
 			
 		case CREATE:
 			createFile(pAryData, offset, lstBytes);
+			
+			arrBytes = convertResult(lstBytes);
+			printCodeMsg(arrBytes);
 			break;
 			
 		case DELETE:
+			// Non-Idempotent
+			arrBytes = _serverCache.get(strOpNum);
+			if(arrBytes != null) {
+				
+				System.out.println("One-update semantics, retrieving from cache..");
+				printCodeMsg(arrBytes);
+				return arrBytes;
+			}
+			
+			// Perform action
 			deleteFromFile(pAryData, offset, lstBytes);
+			
+			arrBytes = convertResult(lstBytes);
+			_serverCache.put(strOpNum, arrBytes);
+			printCodeMsg(arrBytes);
+			
 			break;
 			
 		case ERROR:
@@ -48,38 +79,67 @@ public class CServerManager {
 			break;
 			
 		case MOVE:
+			// Non-Idempotent
+			arrBytes = _serverCache.get(strOpNum);
+			if(arrBytes != null) {
+				
+				System.out.println("One-update semantics, retrieving from cache..");
+				printCodeMsg(arrBytes);
+				return arrBytes;
+			}
+			
+			// Perform action
 			moveOrRenameFile(pAryData, offset, lstBytes);
+			
+			arrBytes = convertResult(lstBytes);
+			_serverCache.put(strOpNum, arrBytes);
+			printCodeMsg(arrBytes);
+			
 			break;
 			
 		case READ:
 			readFromFile(pAryData, offset, lstBytes);
+			
+			arrBytes = convertResult(lstBytes);
+			printCodeMsgContents(arrBytes);
 			break;
 			
 		case UPDATE:
 			break;
 			
 		case WRITE:
+			// Non-Idempotent
+			arrBytes = _serverCache.get(strOpNum);
+			if(arrBytes != null) {
+				
+				System.out.println("One-update semantics, retrieving from cache..");
+				printCodeMsg(arrBytes);
+				return arrBytes;
+			}
+			
+			// Perform action
 			writeToFile(pAryData, offset, lstBytes);
+			
+			arrBytes = convertResult(lstBytes);
+			_serverCache.put(strOpNum, arrBytes);
+			printCodeMsg(arrBytes);
 			break;
 			
 		default:
 			break;
         }
         
-        return convertResult(lstBytes);
+        return arrBytes;
     }
     
     private static void createFile(byte[] pAryData, int offset, ArrayList<Byte> lstBytes) throws IOException {
     	
     	String strPathName = unmarshallString(pAryData, offset).toString();
     	
-    	if(CFileFactory.createFile(strPathName, "")) {
-    		addToResult(lstBytes, "SUCCESS");
-        	addToResult(lstBytes, "File created successfully!");
-        }
-    	
-    	addToResult(lstBytes, "ERROR");
-    	addToResult(lstBytes, "Create File Error: File already exists!");
+    	CFileFactory.createFile(strPathName, "");
+    		
+		addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
+		addToResult(lstBytes, "File '" + strPathName + "' created successfully!");
     }
     
     private static void readFromFile(byte[] pAryData, int offset, ArrayList<Byte> lstBytes) throws IOException {
@@ -99,16 +159,16 @@ public class CServerManager {
 		
 		switch (ioStatus) {
 		case FILE_NOT_FOUND:
-			addToResult(lstBytes, "ERROR");
+			addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
 			addToResult(lstBytes, "READ ERROR: FILE NOT FOUND LA!");
 			break;
 		case OFFSET_EXCEEDS_LENGTH:
-			addToResult(lstBytes, "ERROR");
+			addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
 			addToResult(lstBytes, "READ ERROR: OFFSET EXCEEDS LENGTH LA!");
 			break;
 		case SUCCESS:
-			addToResult(lstBytes, "SUCCESS");
-			addToResult(lstBytes, "Read data from '" + strPathName + "' successfully.");
+			addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
+			addToResult(lstBytes, ("Read data from '" + strPathName + "' successfully."));
 			addToResult(lstBytes, sb.toString());
 			long lastModifiedTime = CFileFactory.getLastModifiedTime(strPathName);
 			addToResult(lstBytes, marshallLong(lastModifiedTime));
@@ -132,15 +192,15 @@ public class CServerManager {
 		
 		switch (ioStatus) {
 		case FILE_NOT_FOUND:
-			addToResult(lstBytes, "ERROR");
+			addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
 			addToResult(lstBytes, "WRITE ERROR: FILE NOT FOUND LA!");
 			break;
 		case OFFSET_EXCEEDS_LENGTH:
-			addToResult(lstBytes, "ERROR");
+			addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
 			addToResult(lstBytes, "WRITE ERROR: OFFSET EXCEEDS LENGTH LA!");
 			break;
 		case SUCCESS:
-			addToResult(lstBytes, "SUCCESS");
+			addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
 			addToResult(lstBytes, "Written data to '" + strPathName + "' successfully.");
 			break;
 		default:
@@ -163,15 +223,15 @@ public class CServerManager {
 		
 		switch (ioStatus) {
 		case FILE_NOT_FOUND:
-			addToResult(lstBytes, "ERROR");
+			addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
 			addToResult(lstBytes, "DELETE ERROR: FILE NOT FOUND LA!");
 			break;
 		case OFFSET_EXCEEDS_LENGTH:
-			addToResult(lstBytes, "ERROR");
+			addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
 			addToResult(lstBytes, "DELETE ERROR: OFFSET EXCEEDS LENGTH LA!");
 			break;
 		case SUCCESS:
-			addToResult(lstBytes, "SUCCESS");
+			addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
 			addToResult(lstBytes, "Deleted data from '" + strPathName + "' successfully.");
 			break;
 		default:
@@ -190,15 +250,15 @@ public class CServerManager {
 		
 		switch (ioStatus) {
 		case FILE_NOT_FOUND:
-			addToResult(lstBytes, "ERROR");
+			addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
 			addToResult(lstBytes, "MOVE/RENAME ERROR: FILE NOT FOUND LA!");
 			break;
 		case FILE_NAME_ALREADY_EXISTS:
-			addToResult(lstBytes, "ERROR");
+			addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
 			addToResult(lstBytes, "MOVE/RENAME ERROR: File with same name exists at destination.");
 			break;
 		case SUCCESS:
-			addToResult(lstBytes, "SUCCESS");
+			addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
 			addToResult(lstBytes, "Moved/Renamed from '" + strPathNameOld + "' to '"
 					+ strPathNameNew + "' successfully.");
 			break;
@@ -226,5 +286,36 @@ public class CServerManager {
     	}
     	
     	return arrBytes;
+    }
+    
+    private static void printCodeMsg(byte[] arrBytes) {
+    	
+    	int un_offset = 0;
+		
+		int un_code = unmarshallInt(arrBytes, un_offset);
+		String str_un_code = ECommand.getCommand(un_code).toString();
+		un_offset += 4;
+		
+		String un_msg = unmarshallString(arrBytes, un_offset).toString();
+		un_offset += (4 + un_msg.length());
+		
+		System.out.printf("Result: %-12s\tMsg: %-40s%n%n", str_un_code, un_msg);
+    }
+    
+    private static void printCodeMsgContents(byte[] arrBytes) {
+    	
+    	int un_offset = 0;
+		
+		int un_code = unmarshallInt(arrBytes, un_offset);
+		String str_un_code = ECommand.getCommand(un_code).toString();
+		un_offset += 4;
+		
+		String un_msg = unmarshallString(arrBytes, un_offset).toString();
+		un_offset += (4 + un_msg.length());
+		
+		String un_contents = unmarshallString(arrBytes, un_offset).toString();
+		
+		System.out.printf("Result: %-12s\tMsg: %-40s\tContents: %-80s%n%n",
+				str_un_code, un_msg, un_contents);
     }
 }

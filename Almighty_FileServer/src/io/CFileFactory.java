@@ -40,15 +40,7 @@ public class CFileFactory {
         Files.write(pObjFilePath, pStrContents.getBytes());
     }*/
 
-    /**
-     * Returns true if file created succcessfully, false if file already exists.
-     * 
-     * @param pStrFile		String representation of the file path
-     * @param pStrContents	Contents to be written to the file
-     * @return				True if file created successfully, false if file already exists
-     * @throws IOException	
-     */
-    public static boolean createFile(String pStrFile, String pStrContents) throws IOException {
+    public static void createFile(String pStrFile, String pStrContents) throws IOException {
     	
         objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
         
@@ -57,12 +49,7 @@ public class CFileFactory {
         	createFolder(objFilePath.getParent());
         }
         
-        if(Files.exists(objFilePath)) {
-        	return false;
-        }
-        
         Files.write(objFilePath, pStrContents.getBytes());
-        return true;
     }
 
     public static void createFolder(Path pObjFilePath) throws IOException {
@@ -230,7 +217,7 @@ public class CFileFactory {
 		}
 		
 		long numDeletedBytes = remaining - strAfterOffset.length();
-		System.out.println("# of deleted bytes: " + numDeletedBytes);
+		/*System.out.println("# of deleted bytes: " + numDeletedBytes);*/
 		
 		// Writes to the file (Moving the contents to replace deleted contents)
 		sbc.position(offset);
