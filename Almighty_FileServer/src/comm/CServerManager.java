@@ -20,7 +20,8 @@ import java.util.HashMap;
  */
 public class CServerManager {
 	
-	private static HashMap<String, byte[]> _serverCache = new HashMap<>();
+	// IP Address - <Seq Num, Cached result>
+	private static HashMap<String, HashMap<Integer, byte[]>> _serverClientsCache = new HashMap<>();
 
     public static byte[] performOperation(byte[] pAryData, String pStrAddr) throws IOException {
 
@@ -29,13 +30,18 @@ public class CServerManager {
         // Get the sequence number
         int seqNumber = unmarshallInt(pAryData, offset);
         offset += 4;
+        
+        HashMap<Integer, byte[]> _clientCache = _serverClientsCache.get(pStrAddr);
+        if(_clientCache == null) {
+        	_clientCache = new HashMap<>();
+        	_serverClientsCache.put(pStrAddr, _clientCache);
+        }
     	
         // Need to provide start offset
         ECommand objCommand = ECommand.getCommand(unmarshallInt(pAryData, offset));
         offset += 4;
         
-        // Operation number, for caching non-idempotent actions
-        String strOpNum = pStrAddr + "_" + seqNumber;
+        // Print client IP, seq number, and action to be performed.
         System.out.printf("IP: %-15s\tSeq #: %-8d\tAction: %-12s%n",
         		pStrAddr, seqNumber, objCommand.toString());
         
@@ -44,6 +50,15 @@ public class CServerManager {
         byte[] arrBytes = null;
         
         switch(objCommand) {
+        
+        case CONN:
+         	_clientCache.clear();
+         	
+         	addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
+         	arrBytes = convertResult(lstBytes);
+         	
+         	System.out.println("Client '" + pStrAddr + "' connected to server.\n");
+        	break;
         
 		case ACK:
 			break;
@@ -57,7 +72,7 @@ public class CServerManager {
 			
 		case DELETE:
 			// Non-Idempotent
-			arrBytes = _serverCache.get(strOpNum);
+			arrBytes = _clientCache.get(seqNumber);
 			if(arrBytes != null) {
 				
 				System.out.println("One-update semantics, retrieving from cache..");
@@ -69,7 +84,7 @@ public class CServerManager {
 			deleteFromFile(pAryData, offset, lstBytes);
 			
 			arrBytes = convertResult(lstBytes);
-			_serverCache.put(strOpNum, arrBytes);
+			_clientCache.put(seqNumber, arrBytes);
 			printCodeMsg(arrBytes);
 			
 			break;
@@ -82,7 +97,7 @@ public class CServerManager {
 			
 		case MOVE:
 			// Non-Idempotent
-			arrBytes = _serverCache.get(strOpNum);
+			arrBytes = _clientCache.get(seqNumber);
 			if(arrBytes != null) {
 				
 				System.out.println("One-update semantics, retrieving from cache..");
@@ -94,7 +109,7 @@ public class CServerManager {
 			moveOrRenameFile(pAryData, offset, lstBytes);
 			
 			arrBytes = convertResult(lstBytes);
-			_serverCache.put(strOpNum, arrBytes);
+			_clientCache.put(seqNumber, arrBytes);
 			printCodeMsg(arrBytes);
 			
 			break;
@@ -111,7 +126,7 @@ public class CServerManager {
 			
 		case WRITE:
 			// Non-Idempotent
-			arrBytes = _serverCache.get(strOpNum);
+			arrBytes = _clientCache.get(seqNumber);
 			if(arrBytes != null) {
 				
 				System.out.println("One-update semantics, retrieving from cache..");
@@ -123,7 +138,7 @@ public class CServerManager {
 			writeToFile(pAryData, offset, lstBytes);
 			
 			arrBytes = convertResult(lstBytes);
-			_serverCache.put(strOpNum, arrBytes);
+			_clientCache.put(seqNumber, arrBytes);
 			printCodeMsg(arrBytes);
 			break;
 			
