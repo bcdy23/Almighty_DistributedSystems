@@ -30,6 +30,7 @@ public class FileClient {
         System.out.println("\nWelcome to Almighty Distributed File System");
 
         int intChoice;
+        String strFile;
 
         do {
             displayMainMenu();
@@ -38,15 +39,11 @@ public class FileClient {
             switch (ECommand.getCommand(intChoice)) {
                 case READ:
 
-                    String strFile = getStringChoice();
+                    strFile = getStringChoice();
 
                     int intOffset = getIntChoice();
 
                     String strData = getStringChoice();
-                    
-
-                    
-                    
 
                     break;
                 case WRITE:
@@ -56,7 +53,10 @@ public class FileClient {
 
                     break;
                 case CREATE:
+                    strFile = getStringChoice();
 
+                    
+                    
                     break;
                 case MONITOR:
 
