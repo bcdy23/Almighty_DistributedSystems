@@ -10,6 +10,7 @@ import comm.CNetworkManager;
 import comm.CServerManager;
 import static comm.CNetworkManager.marshallString;
 import static comm.CNetworkManager.unmarshallString;
+import comm.CUDPClient;
 import comm.ECommand;
 
 import java.io.IOException;
@@ -28,26 +29,26 @@ public class FileClient {
      */
     public static void main(String[] args) throws IOException {
 
-    	byte[] arrBytes = CServerManager.performOperation(
-    			CClientManager.handleReadOperation(
-    					"subDir1_2/abcdefg.txt", 0, 5));
-    	
-    	int offset = 0;
-    	String resultStr = CNetworkManager.unmarshallString(arrBytes, offset).toString();
-    	offset += 4 + resultStr.length();
-    	
-    	String readContents = CNetworkManager.unmarshallString(arrBytes, offset).toString();
-    	
-    	System.out.println(resultStr);
-    	System.out.println(readContents);
-    	
-    	arrBytes = CServerManager.performOperation(
-    			CClientManager.handleRenameOperation(
-    					"subDir1_1/abc.txt", "subDir1_1/abc123.txt"));
-    	
-    	resultStr = CNetworkManager.unmarshallString(arrBytes, 0).toString();
-    	System.out.println(resultStr);
-    	
+        byte[] arrBytes = CServerManager.performOperation(
+                CClientManager.handleReadOperation(
+                        "subDir1_2/abcdefg.txt", 0, 5));
+
+        int offset = 0;
+        String resultStr = CNetworkManager.unmarshallString(arrBytes, offset).toString();
+        offset += 4 + resultStr.length();
+
+        String readContents = CNetworkManager.unmarshallString(arrBytes, offset).toString();
+
+        System.out.println(resultStr);
+        System.out.println(readContents);
+
+        arrBytes = CServerManager.performOperation(
+                CClientManager.handleRenameOperation(
+                        "subDir1_1/abc.txt", "subDir1_1/abc123.txt"));
+
+        resultStr = CNetworkManager.unmarshallString(arrBytes, 0).toString();
+        System.out.println(resultStr);
+
         System.out.println("Initalizing system..\n");
 
         System.out.println("\nSystem initialization completed!");
@@ -57,6 +58,13 @@ public class FileClient {
         int intChoice;
         String strFile;
 
+        int intOffset;
+        int intCount;
+
+        byte[] aryOutput;
+
+        String strServerAdd = "172.22.248.33";
+
         do {
             displayMainMenu();
             intChoice = getIntChoice();
@@ -65,29 +73,58 @@ public class FileClient {
                 case READ:
 
                     strFile = getStringChoice();
-                    int intOffset = getIntChoice();
-                    int intCount = getIntChoice();
+                    intOffset = getIntChoice();
+                    intCount = getIntChoice();
 
-                    
-                    
-                    
-                    
+                    aryOutput = CClientManager.handleReadOperation(strFile, intOffset, intCount);
+
+                    CUDPClient.sendData(strServerAdd, aryOutput);
+
                     break;
                 case WRITE:
+
+                    strFile = getStringChoice();
+                    intOffset = getIntChoice();
+                    String strData = getStringChoice();
+
+                    aryOutput = CClientManager.handleWriteOperation(strFile, intOffset, strData);
+
+                    CUDPClient.sendData(strServerAdd, aryOutput);
 
                     break;
                 case DELETE:
 
+                    strFile = getStringChoice();
+                    intOffset = getIntChoice();
+                    intCount = getIntChoice();
+
+                    aryOutput = CClientManager.handleDeleteOperation(strFile, intOffset, intCount);
+
+                    CUDPClient.sendData(strServerAdd, aryOutput);
                     break;
                 case CREATE:
                     strFile = getStringChoice();
 
-                    
-                    
-                    break;
-                case MONITOR:
+                    aryOutput = CClientManager.handleCreateOperation(strFile);
+
+                    CUDPClient.sendData(strServerAdd, aryOutput);
 
                     break;
+                case MONITOR:
+                    strFile = getStringChoice();
+                    intCount = getIntChoice();
+
+                    aryOutput = CClientManager.handleMonitorOperation(strFile, intCount);
+
+                    CUDPClient.sendData(strServerAdd, aryOutput);
+                    break;
+                case MOVE:
+                    strFile = getStringChoice();
+                    String strFileNew = getStringChoice();
+
+                    aryOutput = CClientManager.handleRenameOperation(strFile, strFileNew);
+
+                    CUDPClient.sendData(strServerAdd, aryOutput);
                 default:
                     System.out.println("Invalid Choice");
             }
