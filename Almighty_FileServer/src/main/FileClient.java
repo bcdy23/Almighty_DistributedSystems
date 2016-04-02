@@ -27,8 +27,7 @@ public class FileClient {
      * @param args the command line arguments
      */
     public static void main(String[] args) throws IOException {
-    	
-<<<<<<< HEAD
+
     	byte[] arrBytes = CServerManager.performOperation(
     			CClientManager.handleReadOperation(
     					"subDir1_2/abcdefg.txt", 0, 5));
@@ -44,13 +43,12 @@ public class FileClient {
     	
     	arrBytes = CServerManager.performOperation(
     			CClientManager.handleRenameOperation(
-    					"subDir1_1/abc.txt", "subDir1_3/abc.txt"));
+    					"subDir1_1/abc.txt", "subDir1_1/abc123.txt"));
     	
-    	/*resultStr = CNetworkManager.unmarshallString(arrBytes, 0).toString();
-    	System.out.println(resultStr);*/
+    	resultStr = CNetworkManager.unmarshallString(arrBytes, 0).toString();
+    	System.out.println(resultStr);
     	
-        /*System.out.println("Initalizing system..\n");
->>>>>>> f3b52d3877c28fc7efa871d2096f187ef9d7203f
+        System.out.println("Initalizing system..\n");
 
         System.out.println("\nSystem initialization completed!");
 
