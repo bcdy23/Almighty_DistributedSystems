@@ -6,6 +6,8 @@
 package main;
 
 import comm.CNetworkManager;
+import static comm.CNetworkManager.marshallString;
+import static comm.CNetworkManager.unmarshallString;
 import comm.ECommand;
 import java.util.Scanner;
 
@@ -37,11 +39,15 @@ public class FileClient {
                 case READ:
 
                     String strFile = getStringChoice();
-                    
+
                     int intOffset = getIntChoice();
-                    
+
                     String strData = getStringChoice();
                     
+
+                    
+                    
+
                     break;
                 case WRITE:
 
@@ -80,7 +86,7 @@ public class FileClient {
     }
 
     private static int getIntChoice() {
-        System.out.println("Please enter your choice: ");
+        System.out.print("Please enter your choice: ");
         int intChoice = sc.nextInt();
         sc.nextLine();
 
@@ -88,8 +94,8 @@ public class FileClient {
     }
 
     private static String getStringChoice() {
-        System.out.println("Please enter your value: ");
-        
+        System.out.print("Please enter String value: ");
+
         return sc.nextLine();
     }
 

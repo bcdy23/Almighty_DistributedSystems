@@ -41,8 +41,11 @@ public class CNetworkManager {
 
         int intCount = 0;
 
+        pIntOffset += 4;
+
         while (intCount < intLength) {
             objSB.append((char) pAryData[pIntOffset + intCount]);
+            intCount++;
         }
 
         return objSB;
@@ -56,7 +59,7 @@ public class CNetworkManager {
 
         System.arraycopy(marshallInt(intLength), 0, aryData, 0, 4);
 
-        System.arraycopy(pStrData.getBytes(), 0, aryData, 5, pStrData.length());
+        System.arraycopy(pStrData.getBytes(), 0, aryData, 4, pStrData.length());
 
         return aryData;
     }
