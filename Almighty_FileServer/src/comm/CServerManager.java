@@ -281,10 +281,12 @@ public class CServerManager {
 		case FILE_NOT_FOUND:
 			addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
 			addToResult(lstBytes, "READ ERROR: FILE NOT FOUND LA!");
+			addToResult(lstBytes, "");
 			break;
 		case OFFSET_EXCEEDS_LENGTH:
 			addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
 			addToResult(lstBytes, "READ ERROR: OFFSET EXCEEDS LENGTH LA!");
+			addToResult(lstBytes, "");
 			break;
 		case SUCCESS:
 			addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
@@ -548,16 +550,22 @@ public class CServerManager {
     	int un_offset = 0;
 		
 		int un_code = unmarshallInt(arrBytes, un_offset);
-		String str_un_code = ECommand.getCommand(un_code).toString();
+		ECommand cmd = ECommand.getCommand(un_code);
+		String str_un_code = cmd.toString();
 		un_offset += 4;
 		
 		String un_msg = unmarshallString(arrBytes, un_offset).toString();
 		un_offset += (4 + un_msg.length());
 		
-		String un_contents = unmarshallString(arrBytes, un_offset).toString();
+		System.out.printf("Result: %-12s\tMsg: %-40s",
+				str_un_code, un_msg);
 		
-		System.out.printf("Result: %-12s\tMsg: %-40s\tContents: %-80s%n%n",
-				str_un_code, un_msg, un_contents);
+		if(cmd == ECommand.ACK) {
+			
+			String un_contents = unmarshallString(arrBytes, un_offset).toString();
+			System.out.printf("\tContents: %-80s", un_contents);
+		}
+		System.out.printf("%n%n");
     }
     
     private static void printCodeLastModi(byte[] arrBytes) {
