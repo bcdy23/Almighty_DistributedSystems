@@ -164,7 +164,7 @@ public class CServerManager {
 			deleteFromFile(pAryData, offset, lstBytes);
 			
 			arrBytes = convertResult(lstBytes);
-			clientCache.put(seqNumber, arrBytes);
+			//clientCache.put(seqNumber, arrBytes);
 			printCodeMsg(arrBytes);
 			
 			// Update clients monitoring this file (if any)
@@ -198,7 +198,7 @@ public class CServerManager {
 			moveOrRenameFile(pAryData, offset, lstBytes);
 			
 			arrBytes = convertResult(lstBytes);
-			clientCache.put(seqNumber, arrBytes);
+			//clientCache.put(seqNumber, arrBytes);
 			printCodeMsg(arrBytes);
 			
 			break;
@@ -229,7 +229,7 @@ public class CServerManager {
 			writeToFile(pAryData, offset, lstBytes);
 			
 			arrBytes = convertResult(lstBytes);
-			clientCache.put(seqNumber, arrBytes);
+			//clientCache.put(seqNumber, arrBytes);
 			printCodeMsg(arrBytes);
 			
 			// Update clients monitoring this file (if any)
