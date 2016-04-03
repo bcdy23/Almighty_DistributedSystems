@@ -5,9 +5,15 @@
  */
 package client;
 
+import cache.CFile;
+import cache.CFileCacheManager;
+import comm.CNetworkManager;
 import static comm.CNetworkManager.marshallInt;
 import static comm.CNetworkManager.marshallString;
+import comm.CUDPClient;
 import comm.ECommand;
+import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,6 +22,35 @@ import java.util.List;
  * @author Bryden
  */
 public class CClientManager {
+
+    public static boolean validCache(String pStrFileName, String pStrServerAddr, long pLngFreshness) throws UnknownHostException, IOException {
+        CFile objFileAttr = CFileCacheManager.getFileAtrr(pStrFileName);
+
+        long lngDiff = System.currentTimeMillis() - objFileAttr.getLocalLastValidate();
+
+        if (lngDiff < pLngFreshness) {
+            return true;
+        } else {
+
+            byte[] output = CUDPClient.sendData(pStrServerAddr, handleLastModiOperation(pStrFileName));
+
+            int intCode = CNetworkManager.unmarshallInt(output, 0);
+
+            if (intCode == ECommand.ERROR.getCode()) {
+                return false;
+            }
+
+            long lngServerLastModi = CNetworkManager.unmarshallLong(output, 4);
+
+            objFileAttr.setLocalLastValidate();
+
+            if (lngServerLastModi == objFileAttr.getServerLastModified()) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
 
     public static byte[] handleReadOperation(String pStrFile, int pIntOffset, int pIntBytes) {
 
@@ -171,9 +206,9 @@ public class CClientManager {
         return aryOutput;
     }
 
-        public static byte[] handleLastModiOperation(String pStrFile) {
+    public static byte[] handleLastModiOperation(String pStrFile) {
 
-        byte[] aryCommand = marshallInt(ECommand.MONITOR.getCode());
+        byte[] aryCommand = marshallInt(ECommand.LASTMODI.getCode());
         byte[] aryFile = marshallString(pStrFile);
 
         List<byte[]> lstOutput = new ArrayList<>(2);
@@ -193,5 +228,5 @@ public class CClientManager {
 
         return aryOutput;
     }
-    
+
 }

@@ -23,7 +23,7 @@ public class CUDPClient {
 
     private static int intSeqId = 0;
 
-    private static final int intFailure = 5;
+    private static final int intFailure = 0;
 
     public static byte[] connectionEstablish(String pStrAdd) throws SocketException, UnknownHostException, IOException {
         byte[] aryData = marshallInt(ECommand.CONN.getCode());
@@ -66,6 +66,10 @@ public class CUDPClient {
     }
 
     public static byte[] sendData(String pStrAdd, byte[] pAryData) throws SocketException, UnknownHostException, IOException {
+        return sendData(pStrAdd, pAryData, 4445);
+    }
+
+    public static byte[] sendData(String pStrAdd, byte[] pAryData, int pIntPort) throws SocketException, UnknownHostException, IOException {
 
         byte[] arySeq = CNetworkManager.marshallInt(intSeqId);
 
@@ -82,7 +86,7 @@ public class CUDPClient {
         byte[] buf = new byte[1024];
 
         InetAddress address = InetAddress.getByName(pStrAdd);
-        DatagramPacket packet = new DatagramPacket(arySent, arySent.length, address, 4445);
+        DatagramPacket packet = new DatagramPacket(arySent, arySent.length, address, pIntPort);
 
         if (CRandomGenerator.getInt(1, 10) > intFailure) {
             socket.send(packet);

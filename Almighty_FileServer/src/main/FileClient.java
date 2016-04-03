@@ -5,14 +5,17 @@
  */
 package main;
 
+import cache.CFileCacheManager;
 import client.CClientManager;
 
 import comm.CNetworkManager;
 import comm.CUDPClient;
 import static comm.CUDPClient.connectionEstablish;
+import comm.CUDPServer_MultiCast;
 import comm.ECommand;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Scanner;
 
 /**
@@ -23,7 +26,7 @@ public class FileClient {
 
     private static Scanner sc = new Scanner(System.in);
 
-    private static void displayServerResponse(byte[] pAryData, ECommand pObjCommand) {
+    private static int displayServerReadResponse(byte[] pAryData, String pStrFileName, int pIntOffset, int pIntCount) {
         int intCode = CNetworkManager.unmarshallInt(pAryData, 0);
 
         String strMsg = CNetworkManager.unmarshallString(pAryData, 4).toString();
@@ -32,12 +35,28 @@ public class FileClient {
 
         if (intCode == ECommand.ACK.getCode()) {
 
-            if (pObjCommand == ECommand.READ) {
-                String strReadData = CNetworkManager.unmarshallString(pAryData, strMsg.length() + 8).toString();
+            String strReadData = CNetworkManager.unmarshallString(pAryData, strMsg.length() + 8).toString();
 
-                System.out.println("DATA READ : " + strReadData);
+            if (pIntOffset + pIntCount >= strReadData.length()) {
+                System.out.println("Data Read : " + strReadData.substring(pIntOffset));
+            } else {
+                System.out.println("Data Read : " + strReadData.substring(pIntOffset, pIntOffset + pIntCount));
             }
+
+            CFileCacheManager.setFileCache(pStrFileName, strReadData, CNetworkManager.unmarshallLong(pAryData, strReadData.length() + strMsg.length() + 12));
         }
+
+        return intCode;
+    }
+
+    private static int displayServerResponse(byte[] pAryData, ECommand pObjCommand) {
+        int intCode = CNetworkManager.unmarshallInt(pAryData, 0);
+
+        String strMsg = CNetworkManager.unmarshallString(pAryData, 4).toString();
+
+        System.out.println(strMsg);
+
+        return intCode;
     }
 
     /**
@@ -74,11 +93,34 @@ public class FileClient {
                     intOffset = getIntChoice();
                     intCount = getIntChoice();
 
+                    int intCount2 = intCount;
+
+                    if (CFileCacheManager.fileInCache(strFile)) {
+
+                        if (CClientManager.validCache(strFile, strServerAdd, 10000)) {
+                            System.out.println("Reading from Cache");
+
+                            String strData = CFileCacheManager.getCacheBlock(strFile, 0);
+
+                            if (intOffset > strData.length()) {
+                                System.out.println("Invalid Offset");
+                            } else if (intOffset + intCount >= strData.length()) {
+                                System.out.println(CFileCacheManager.getCacheBlock(strFile, 0).substring(intOffset));
+                            } else {
+                                System.out.println(CFileCacheManager.getCacheBlock(strFile, 0).substring(intOffset, intOffset + intCount));
+                            }
+
+                            break;
+                        }
+                    } else {
+                        intCount2 = intCount;
+                        intCount = 500;
+                    }
                     aryOutput = CClientManager.handleReadOperation(strFile, intOffset, intCount);
 
                     data = CUDPClient.sendData(strServerAdd, aryOutput);
 
-                    displayServerResponse(data, ECommand.READ);
+                    displayServerReadResponse(data, strFile, intOffset, intCount2);
 
                     break;
                 case WRITE:
@@ -91,7 +133,7 @@ public class FileClient {
 
                     data = CUDPClient.sendData(strServerAdd, aryOutput);
 
-                    displayServerResponse(data, ECommand.WRITE);
+                    int intReturnCode = displayServerResponse(data, ECommand.WRITE);
 
                     break;
                 case DELETE:
@@ -123,6 +165,12 @@ public class FileClient {
                     aryOutput = CClientManager.handleMonitorOperation(strFile, intCount);
 
                     data = CUDPClient.sendData(strServerAdd, aryOutput);
+
+                    int intCode = displayServerResponse(data, ECommand.MONITOR);
+
+                    if (intCode == ECommand.ACK.getCode()) {
+                        new CUDPServer_MultiCast().execute(intCount);
+                    }
 
                     //Start Mointor
                     //displayServerResponse(data, ECommand.WRITE);
