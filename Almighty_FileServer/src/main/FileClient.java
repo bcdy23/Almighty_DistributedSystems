@@ -23,32 +23,30 @@ public class FileClient {
 
     private static Scanner sc = new Scanner(System.in);
 
+    private static void displayServerResponse(byte[] pAryData, ECommand pObjCommand) {
+        int intCode = CNetworkManager.unmarshallInt(pAryData, 0);
+
+        String strMsg = CNetworkManager.unmarshallString(pAryData, 4).toString();
+
+        System.out.println(strMsg);
+
+        if (intCode == ECommand.ACK.getCode()) {
+
+            if (pObjCommand == ECommand.READ) {
+                String strReadData = CNetworkManager.unmarshallString(pAryData, strMsg.length() + 8).toString();
+
+                System.out.println("DATA READ : " + strReadData);
+            }
+        }
+    }
+
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) throws IOException {
 
-        String strServerAdd = "172.22.248.33";
-
-//        byte[] arrBytes = CServerManager.performOperation(
-//                CClientManager.handleReadOperation(
-//                        "subDir1_2/abcdefg.txt", 0, 5));
-//
-//        int offset = 0;
-//        String resultStr = CNetworkManager.unmarshallString(arrBytes, offset).toString();
-//        offset += 4 + resultStr.length();
-//
-//        String readContents = CNetworkManager.unmarshallString(arrBytes, offset).toString();
-//
-//        System.out.println(resultStr);
-//        System.out.println(readContents);
-//
-//        arrBytes = CServerManager.performOperation(
-//                CClientManager.handleRenameOperation(
-//                        "subDir1_1/abc.txt", "subDir1_1/abc123.txt"));
-//
-//        resultStr = CNetworkManager.unmarshallString(arrBytes, 0).toString();
-//        System.out.println(resultStr);
+//        String strServerAdd = "172.22.248.33";
+        String strServerAdd = "127.0.0.1";
         System.out.println("Initalizing system..\n");
 
         connectionEstablish(strServerAdd);
@@ -64,7 +62,7 @@ public class FileClient {
         int intCount;
 
         byte[] aryOutput;
-
+        byte[] data;
         do {
             displayMainMenu();
             intChoice = getIntChoice();
@@ -78,18 +76,9 @@ public class FileClient {
 
                     aryOutput = CClientManager.handleReadOperation(strFile, intOffset, intCount);
 
-                    byte[] data = CUDPClient.sendData(strServerAdd, aryOutput);
+                    data = CUDPClient.sendData(strServerAdd, aryOutput);
 
-                    int z = CNetworkManager.unmarshallInt(data, 0);
-
-                    String x = CNetworkManager.unmarshallString(data, 4).toString();
-
-                    String y = CNetworkManager.unmarshallString(data, x.length() + 8).toString();
-
-                    System.out.println(z);
-                    System.out.println(x);
-                    System.out.println(y);
-                    System.out.println(CNetworkManager.unmarshallLong(data, x.length() + y.length() + 12));
+                    displayServerResponse(data, ECommand.READ);
 
                     break;
                 case WRITE:
@@ -100,7 +89,9 @@ public class FileClient {
 
                     aryOutput = CClientManager.handleWriteOperation(strFile, intOffset, strData);
 
-                    CUDPClient.sendData(strServerAdd, aryOutput);
+                    data = CUDPClient.sendData(strServerAdd, aryOutput);
+
+                    displayServerResponse(data, ECommand.WRITE);
 
                     break;
                 case DELETE:
@@ -111,14 +102,18 @@ public class FileClient {
 
                     aryOutput = CClientManager.handleDeleteOperation(strFile, intOffset, intCount);
 
-                    CUDPClient.sendData(strServerAdd, aryOutput);
+                    data = CUDPClient.sendData(strServerAdd, aryOutput);
+
+                    displayServerResponse(data, ECommand.DELETE);
                     break;
                 case CREATE:
                     strFile = getStringChoice();
 
                     aryOutput = CClientManager.handleCreateOperation(strFile);
 
-                    CUDPClient.sendData(strServerAdd, aryOutput);
+                    data = CUDPClient.sendData(strServerAdd, aryOutput);
+
+                    displayServerResponse(data, ECommand.CREATE);
 
                     break;
                 case MONITOR:
@@ -127,7 +122,10 @@ public class FileClient {
 
                     aryOutput = CClientManager.handleMonitorOperation(strFile, intCount);
 
-                    CUDPClient.sendData(strServerAdd, aryOutput);
+                    data = CUDPClient.sendData(strServerAdd, aryOutput);
+
+                    //Start Mointor
+                    //displayServerResponse(data, ECommand.WRITE);
                     break;
                 case MOVE:
                     strFile = getStringChoice();
@@ -135,7 +133,9 @@ public class FileClient {
 
                     aryOutput = CClientManager.handleRenameOperation(strFile, strFileNew);
 
-                    CUDPClient.sendData(strServerAdd, aryOutput);
+                    data = CUDPClient.sendData(strServerAdd, aryOutput);
+
+                    displayServerResponse(data, ECommand.MOVE);
                     break;
                 case ACK:
                     break;

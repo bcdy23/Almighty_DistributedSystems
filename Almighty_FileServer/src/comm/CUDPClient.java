@@ -43,7 +43,7 @@ public class CUDPClient {
         InetAddress address = InetAddress.getByName(pStrAdd);
         DatagramPacket packet = new DatagramPacket(arySent, arySent.length, address, 4445);
 
-        System.out.println("Sent packet dropped");
+        socket.send(packet);
 
         DatagramPacket response = new DatagramPacket(buf, buf.length);
 
@@ -60,7 +60,7 @@ public class CUDPClient {
 
             } catch (SocketTimeoutException e) {
                 // resend
-                System.out.println("Sent packet dropped");
+                socket.send(packet);
             }
         }
     }
