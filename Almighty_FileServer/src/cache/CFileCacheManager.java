@@ -2,10 +2,6 @@ package cache;
 
 import java.util.HashMap;
 
-/**
- *
- * @author Bryden
- */
 public class CFileCacheManager {
 
     public static final HashMap<String, HashMap<Integer, String>> objCache = new HashMap<>();

@@ -17,10 +17,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-/**
- *
- * @author King Chody & Gosu the Minion
- */
 public class CServerManager {
 
     // IP Address - <Seq Num, Cached result>
@@ -439,7 +435,7 @@ public class CServerManager {
             System.arraycopy(aryModi, 0, aryFinalOutput, aryOutput.length + aryContents.length, aryModi.length);
 
             for (String ip : lstClients) {
-                System.out.println("Sending data");
+                System.out.println("Updating client '" + ip + "'..");
                 CUDPClient.sendData(ip, aryFinalOutput, 2222);
             }
 

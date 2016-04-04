@@ -12,10 +12,6 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- *
- * @author Bryden
- */
 public class CClientManager {
 
     public static boolean validCache(String pStrFileName, String pStrServerAddr, long pLngFreshness) throws UnknownHostException, IOException {
