@@ -108,8 +108,8 @@ public class FileClient {
      */
     public static void main(String[] args) throws IOException {
 
-        String strServerAdd = "172.22.248.33";
-//        String strServerAdd = "127.0.0.1";
+//        String strServerAdd = "172.22.248.33";
+        String strServerAdd = "127.0.0.1";
         System.out.println("Initalizing system..\n");
 
         connectionEstablish(strServerAdd);

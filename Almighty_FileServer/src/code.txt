@@ -1,3 +1,4 @@
+//CFile class to hold attributes related to file caching
 package cache;
 
 public class CFile {
@@ -29,6 +30,7 @@ public class CFile {
 
 }
 
+//CFileCacheManager holds the logic of caching the file contents
 package cache;
 
 import java.util.HashMap;
@@ -92,6 +94,7 @@ public class CFileCacheManager {
 
 }
 
+//CClientManager handles the marshalling of data to those format required in invocation
 package client;
 
 import cache.CFile;
@@ -316,6 +319,7 @@ public class CClientManager {
 
 }
 
+//CServerManager handles the execution of remote invocation with the capabilty of at most once using history and duplicate filtering
 package comm;
 
 import cache.CFileCacheManager;
@@ -864,6 +868,7 @@ public class CServerManager {
     }
 }
 
+//CNetworkManager handles the code for unmarshalling and marshalling of primitive and composite data types
 package comm;
 
 public class CNetworkManager {
@@ -949,6 +954,8 @@ public class CNetworkManager {
 
 }
 
+//CUDPClient handles the actual transmission of data packets
+//Uses failure rate to simulate packet loss
 package comm;
 
 import static comm.CNetworkManager.marshallInt;
@@ -1064,9 +1071,9 @@ public class CUDPClient {
                 // resend
                 if (CRandomGenerator.getInt(1, 10) > intFailure) {
                     socket.send(packet);
-                    intRetry++;
                 } else {
                     System.out.println("Sent packet dropped. Retry " + intRetry);
+                    intRetry++;
                 }
             }
         }
@@ -1074,6 +1081,8 @@ public class CUDPClient {
         return null;
     }
 }
+
+//CUDPServer handles the recieving of UDP from client
 
 package comm;
 
@@ -1114,6 +1123,7 @@ public class CUDPServer {
     }
 }
 
+//CUDPServer_MultiCast handles receiving of multicasting of montiored files
 package comm;
 
 import java.io.IOException;
@@ -1163,6 +1173,8 @@ public class CUDPServer_MultiCast {
     }
 }
 
+
+//Contains the instruction set for system
 package comm;
 
 public enum ECommand {
@@ -1198,6 +1210,8 @@ public enum ECommand {
         return null;
     }
 }
+
+//CFileFactory handles the low level IO operations of files
 
 package io;
 
@@ -1433,6 +1447,8 @@ public class CFileFactory {
     }
 }
 
+//Main execuable for Server
+
 package main;
 
 import comm.CUDPServer;
@@ -1455,6 +1471,8 @@ public class AlmightyFileServer {
         }
     }
 }
+
+//Main Execuable for Client
 
 package main;
 
@@ -1750,6 +1768,8 @@ public class FileClient {
 
 }
 
+//Code to retrive data stored in setting file
+
 package settings;
 
 import io.CFileFactory;
@@ -1795,6 +1815,7 @@ public class CSettingManager {
 
 }
 
+//Code for random generation of numbers used in simulating packet drop
 package util;
 
 import java.util.Random;
