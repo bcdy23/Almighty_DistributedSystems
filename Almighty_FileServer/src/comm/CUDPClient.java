@@ -30,7 +30,7 @@ public class CUDPClient {
         DatagramSocket socket = new DatagramSocket();
         socket.setSoTimeout(2000);
         // send request
-        byte[] buf = new byte[1024];
+        byte[] buf = new byte[1472];
 
         InetAddress address = InetAddress.getByName(pStrAdd);
         DatagramPacket packet = new DatagramPacket(arySent, arySent.length, address, 4445);

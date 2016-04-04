@@ -225,7 +225,6 @@ public class CFileFactory {
     }
 
     public enum IO_STATUS {
-
         SUCCESS,
         FILE_NOT_FOUND,
         OFFSET_EXCEEDS_LENGTH,

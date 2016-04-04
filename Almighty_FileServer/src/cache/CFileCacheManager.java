@@ -4,8 +4,6 @@ import java.util.HashMap;
 
 public class CFileCacheManager {
 
-    public static final int intBlockSize = 32;
-
     public static final HashMap<String, HashMap<Integer, String>> objCache = new HashMap<>();
 
     public static final HashMap<String, CFile> objFileCache = new HashMap<>();

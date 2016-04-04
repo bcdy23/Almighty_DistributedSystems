@@ -17,7 +17,7 @@ public class CUDPServer {
     public void execute() throws IOException {
 
         while (true) {
-            byte[] aryBuffer = new byte[1024];
+            byte[] aryBuffer = new byte[1472];
 
             DatagramPacket objPacket = new DatagramPacket(aryBuffer, aryBuffer.length);
             socket.receive(objPacket);
