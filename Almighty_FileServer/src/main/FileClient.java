@@ -55,7 +55,7 @@ public class FileClient {
 
                 objOut.insert(pIntOffset, pStrData);
 
-                CFileCacheManager.setFileCache(pStrFileName, objOut.toString(), lngLastModi);
+                CFileCacheManager.setFileCache(pStrFileName, objOut.toString(), lngLastModi, false);
             }
 
         }
@@ -79,7 +79,7 @@ public class FileClient {
 
                 objOut.delete(pIntOffset, pIntOffset + pIntCount);
 
-                CFileCacheManager.setFileCache(pStrFileName, objOut.toString(), lngLastModi);
+                CFileCacheManager.setFileCache(pStrFileName, objOut.toString(), lngLastModi, false);
             }
 
         }
