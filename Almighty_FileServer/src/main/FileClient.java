@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package main;
 
 import cache.CFileCacheManager;
@@ -15,7 +10,6 @@ import comm.CUDPServer_MultiCast;
 import comm.ECommand;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Scanner;
 
 /**
@@ -135,7 +129,7 @@ public class FileClient {
 
                     data = CUDPClient.sendData(strServerAdd, aryOutput);
 
-                    int intReturnCode = displayServerResponse(data, ECommand.WRITE);
+                    displayServerResponse(data, ECommand.WRITE);
 
                     break;
                 case DELETE:

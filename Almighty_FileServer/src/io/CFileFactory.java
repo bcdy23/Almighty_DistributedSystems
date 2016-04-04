@@ -5,8 +5,6 @@ import java.io.InputStream;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -17,7 +15,7 @@ import settings.CSettingManager;
 
 /**
  *
- * @author King Chody
+ * @author King Chody & Gosu the Minion
  */
 public class CFileFactory {
 
@@ -42,63 +40,15 @@ public class CFileFactory {
     public static void createFolder(Path pObjFilePath) throws IOException {
 
         Files.createDirectories(pObjFilePath);
-        //Files.createDirectory(pObjFilePath);
-    }
-
-    /*public static void renameFile(Path pObjFilePath, String pStrNewName) throws IOException {
-        Files.move(pObjFilePath, pObjFilePath.resolveSibling(pStrNewName), StandardCopyOption.ATOMIC_MOVE);
-    }
-
-    public static void renameFolder(Path pObjFilePath, String pStrNewName) throws IOException {
-        Files.move(pObjFilePath, pObjFilePath.resolveSibling(pStrNewName), StandardCopyOption.ATOMIC_MOVE);
-    }*/
-    public static void updateFile(Path pObjFilePath, String pStrContents) throws IOException {
-        Files.write(pObjFilePath, pStrContents.getBytes(), StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
-    }
-
-    public static void deleteFile(Path pObjFilePath) throws IOException {
-        Files.deleteIfExists(pObjFilePath);
-    }
-
-    public static void deleteFolder(Path pObjFilePath) throws IOException {
-        Files.walkFileTree(pObjFilePath, new FileVisitor<Path>() {
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc)
-                    throws IOException {
-
-                Files.delete(dir);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir,
-                    BasicFileAttributes attrs) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFile(Path file,
-                    BasicFileAttributes attrs) throws IOException {
-
-                Files.delete(file);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFileFailed(Path file, IOException exc)
-                    throws IOException {
-                System.out.println(exc.toString());
-                return FileVisitResult.CONTINUE;
-            }
-        });
     }
 
     public static InputStream getFile_InputStream(String pStrPath) throws IOException {
+    	
         return getFile_InputStream(Paths.get(pStrPath));
     }
 
     private static InputStream getFile_InputStream(Path pObjPath) throws IOException {
+    	
         return Files.newInputStream(pObjPath, StandardOpenOption.READ);
     }
 

@@ -17,8 +17,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import client.CClientManager;
-
 /**
  *
  * @author King Chody & Gosu the Minion
@@ -30,80 +28,6 @@ public class CServerManager {
 
     // File pathname - <IP Address, Server Time>
     private static HashMap<String, HashMap<String, Long>> _serverFilesMonitor = new HashMap<>();
-
-    public static void main(String[] args) throws IOException {
-
-        String[] ipAddress = new String[]{"0.0.0.1", "0.0.0.2", "0.0.0.3"};
-        int seqNum = 0;
-
-        for (String ip : ipAddress) {
-
-            byte[] aryData = marshallInt(ECommand.CONN.getCode());
-            byte[] arySeq = marshallInt(seqNum++);
-
-            byte[] arySent = combine(arySeq, aryData);
-
-            performOperation(arySent, ip);
-        }
-
-        byte[] aryOutput = CClientManager.handleCreateOperation("abc.txt");
-        byte[] arySeq = marshallInt(seqNum++);
-        aryOutput = combine(arySeq, aryOutput);
-        performOperation(aryOutput, ipAddress[2]);
-
-        aryOutput = CClientManager.handleWriteOperation("abc.txt", 0, "Hello World!");
-        arySeq = marshallInt(seqNum++);
-        aryOutput = combine(arySeq, aryOutput);
-        performOperation(aryOutput, ipAddress[2]);
-
-        aryOutput = CClientManager.handleReadOperation("abc.txt", 0, 100);
-        arySeq = marshallInt(seqNum++);
-        aryOutput = combine(arySeq, aryOutput);
-        performOperation(aryOutput, ipAddress[2]);
-
-        aryOutput = CClientManager.handleMonitorOperation("abc.txt", 2000);
-        arySeq = marshallInt(seqNum++);
-        aryOutput = combine(arySeq, aryOutput);
-        performOperation(aryOutput, ipAddress[0]);
-
-        aryOutput = CClientManager.handleMonitorOperation("abc.txt", 5000);
-        arySeq = marshallInt(seqNum++);
-        aryOutput = combine(arySeq, aryOutput);
-        performOperation(aryOutput, ipAddress[1]);
-
-        // Client 1 & 2 updated
-        aryOutput = CClientManager.handleWriteOperation("abc.txt", 12, " Bryden is so shady!");
-        arySeq = marshallInt(seqNum++);
-        aryOutput = combine(arySeq, aryOutput);
-        performOperation(aryOutput, ipAddress[2]);
-
-        try {
-            Thread.sleep(3000);
-        } catch (InterruptedException e) {
-        }
-        System.out.println("3 seconds has elapsed on the server......\n");
-
-        aryOutput = CClientManager.handleRenameOperation("abc.txt", "def.txt");
-        arySeq = marshallInt(seqNum++);
-        aryOutput = combine(arySeq, aryOutput);
-        performOperation(aryOutput, ipAddress[2]);
-
-        // Client 2 updated
-        aryOutput = CClientManager.handleDeleteOperation("def.txt", 0, 13);
-        arySeq = marshallInt(seqNum++);
-        aryOutput = combine(arySeq, aryOutput);
-        performOperation(aryOutput, ipAddress[2]);
-    }
-
-    private static byte[] combine(byte[] seq, byte[] data) {
-
-        byte[] arySent = new byte[data.length + seq.length];
-
-        System.arraycopy(seq, 0, arySent, 0, seq.length);
-        System.arraycopy(data, 0, arySent, seq.length, data.length);
-
-        return arySent;
-    }
 
     public static byte[] performOperation(byte[] pAryData, String pStrAddr) throws IOException {
 
@@ -603,23 +527,25 @@ public class CServerManager {
         System.out.printf("Result: %-12s\tLast Modified: %-20d%n%n", str_un_code, un_lastModi);
     }
 
-    public static byte[] performMonitoringOperation(String pStrFileName, byte[] pAryData, String pStrAddr) throws IOException {
+	public static byte[] performMonitoringOperation(String pStrFileName,
+			byte[] pAryData, String pStrAddr) throws IOException {
 
-        ArrayList<Byte> lstBytes = new ArrayList<>();
-        byte[] arrBytes = null;
+		ArrayList<Byte> lstBytes = new ArrayList<>();
 
-        String strMsg = unmarshallString(pAryData, 4).toString();
-        String strData = unmarshallString(pAryData, 8 + strMsg.length()).toString();
-        long lngModi = unmarshallLong(pAryData, 12 + strMsg.length() + strData.length());
+		String strMsg = unmarshallString(pAryData, 4).toString();
+		String strData = unmarshallString(pAryData, 8 + strMsg.length())
+				.toString();
+		long lngModi = unmarshallLong(pAryData,
+				12 + strMsg.length() + strData.length());
 
-        System.out.println(strMsg);
-        System.out.println("New Contents " + strData);
+		System.out.println(strMsg);
+		System.out.println("New Contents " + strData);
 
-        CFileCacheManager.setFileCache(pStrFileName, strData, lngModi);
+		CFileCacheManager.setFileCache(pStrFileName, strData, lngModi);
 
-        addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
+		addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
 
-        return convertResult(lstBytes);
+		return convertResult(lstBytes);
 
-    }
+	}
 }
