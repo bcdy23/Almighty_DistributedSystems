@@ -1,0 +1,1809 @@
+package cache;
+
+public class CFile {
+
+    private long lngLastValidate;
+    private long lngLastServerModified;
+
+    private long lngFileLength;
+
+    public long getFileLength() {
+        return lngFileLength;
+    }
+
+    public long getLocalLastValidate() {
+        return lngLastValidate;
+    }
+
+    public long getServerLastModified() {
+        return lngLastServerModified;
+    }
+
+    public void setLocalLastValidate() {
+        lngLastValidate = System.currentTimeMillis();
+    }
+
+    public void setServerLastModified(long pLngServer) {
+        lngLastServerModified = pLngServer;
+    }
+
+}
+
+package cache;
+
+import java.util.HashMap;
+
+public class CFileCacheManager {
+
+    public static final HashMap<String, HashMap<Integer, String>> objCache = new HashMap<>();
+
+    public static final HashMap<String, CFile> objFileCache = new HashMap<>();
+
+    public static void setFileCache(String pStrFileName, String pAryData, long pLngLastModi) {
+        setFileCache(pStrFileName, pAryData, pLngLastModi, false);
+    }
+
+    public static void setFileCache(String pStrFileName, String pAryData, long pLngLastModi, boolean setLastValid) {
+        CFile objFile = new CFile();
+
+        objFile.setServerLastModified(pLngLastModi);
+        objFile.setLocalLastValidate();
+
+        objFileCache.put(pStrFileName, objFile);
+
+        HashMap<Integer, String> objHM = new HashMap<>();
+
+        objHM.put(0, pAryData);
+
+        objCache.put(pStrFileName, objHM);
+    }
+
+    public static String getFileCache(String pStrFileName) {
+        return objCache.get(pStrFileName).get(0);
+    }
+
+    public static boolean fileInCache(String pStrFileName) {
+        return objFileCache.containsKey(pStrFileName);
+    }
+
+    public static long getFileSize(String pStrFileName) {
+        if (!objFileCache.containsKey(pStrFileName)) {
+            return -1;
+        }
+
+        return objFileCache.get(pStrFileName).getFileLength();
+    }
+
+    public static String getCacheBlock(String strFileName, int pIntBlockLocation) {
+        if (!objCache.containsKey(strFileName)) {
+            return null;
+        }
+
+        if (!objCache.get(strFileName).containsKey(pIntBlockLocation)) {
+            return null;
+        }
+
+        return objCache.get(strFileName).get(pIntBlockLocation);
+    }
+
+    public static CFile getFileAtrr(String pStrFileName) {
+        return objFileCache.get(pStrFileName);
+    }
+
+}
+
+package client;
+
+import cache.CFile;
+import cache.CFileCacheManager;
+import comm.CNetworkManager;
+import static comm.CNetworkManager.marshallInt;
+import static comm.CNetworkManager.marshallString;
+import comm.CUDPClient;
+import comm.ECommand;
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class CClientManager {
+
+    public static boolean validCache(String pStrFileName, String pStrServerAddr, long pLngFreshness) throws UnknownHostException, IOException {
+        CFile objFileAttr = CFileCacheManager.getFileAtrr(pStrFileName);
+
+        long lngDiff = System.currentTimeMillis() - objFileAttr.getLocalLastValidate();
+
+        if (lngDiff < pLngFreshness) {
+            return true;
+        } else {
+
+            byte[] output = CUDPClient.sendData(pStrServerAddr, handleLastModiOperation(pStrFileName));
+
+            int intCode = CNetworkManager.unmarshallInt(output, 0);
+
+            if (intCode == ECommand.ERROR.getCode()) {
+                return false;
+            }
+
+            long lngServerLastModi = CNetworkManager.unmarshallLong(output, 4);
+
+            objFileAttr.setLocalLastValidate();
+
+            if (lngServerLastModi == objFileAttr.getServerLastModified()) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    public static byte[] handleReadOperation(String pStrFile, int pIntOffset, int pIntBytes) {
+
+        byte[] aryCommand = marshallInt(ECommand.READ.getCode());
+        byte[] aryFile = marshallString(pStrFile);
+        byte[] aryOffset = marshallInt(pIntOffset);
+        byte[] aryCount = marshallInt(pIntBytes);
+
+        List<byte[]> lstOutput = new ArrayList<>(4);
+
+        lstOutput.add(aryCommand);
+        lstOutput.add(aryFile);
+        lstOutput.add(aryOffset);
+        lstOutput.add(aryCount);
+
+        byte[] aryOutput = new byte[aryCommand.length + aryFile.length + aryOffset.length + aryCount.length];
+
+        int intOffset = 0;
+
+        for (byte[] aryData : lstOutput) {
+            System.arraycopy(aryData, 0, aryOutput, intOffset, aryData.length);
+
+            intOffset += aryData.length;
+        }
+
+        return aryOutput;
+    }
+
+    public static byte[] handleWriteOperation(String pStrFile, int pIntOffset, String pStrData) {
+
+        byte[] aryCommand = marshallInt(ECommand.WRITE.getCode());
+        byte[] aryFile = marshallString(pStrFile);
+        byte[] aryOffset = marshallInt(pIntOffset);
+        byte[] aryCount = marshallString(pStrData);
+
+        List<byte[]> lstOutput = new ArrayList<>(4);
+
+        lstOutput.add(aryCommand);
+        lstOutput.add(aryFile);
+        lstOutput.add(aryOffset);
+        lstOutput.add(aryCount);
+
+        byte[] aryOutput = new byte[aryCommand.length + aryFile.length + aryOffset.length + aryCount.length];
+
+        int intOffset = 0;
+
+        for (byte[] aryData : lstOutput) {
+            System.arraycopy(aryData, 0, aryOutput, intOffset, aryData.length);
+
+            intOffset += aryData.length;
+        }
+
+        return aryOutput;
+    }
+
+    public static byte[] handleDeleteOperation(String pStrFile, int pIntOffset, int pIntBytes) {
+
+        byte[] aryCommand = marshallInt(ECommand.DELETE.getCode());
+        byte[] aryFile = marshallString(pStrFile);
+        byte[] aryOffset = marshallInt(pIntOffset);
+        byte[] aryCount = marshallInt(pIntBytes);
+
+        List<byte[]> lstOutput = new ArrayList<>(4);
+
+        lstOutput.add(aryCommand);
+        lstOutput.add(aryFile);
+        lstOutput.add(aryOffset);
+        lstOutput.add(aryCount);
+
+        byte[] aryOutput = new byte[aryCommand.length + aryFile.length + aryOffset.length + aryCount.length];
+
+        int intOffset = 0;
+
+        for (byte[] aryData : lstOutput) {
+            System.arraycopy(aryData, 0, aryOutput, intOffset, aryData.length);
+
+            intOffset += aryData.length;
+        }
+
+        return aryOutput;
+    }
+
+    public static byte[] handleCreateOperation(String pStrFile) {
+
+        byte[] aryCommand = marshallInt(ECommand.CREATE.getCode());
+        byte[] aryFile = marshallString(pStrFile);
+
+        List<byte[]> lstOutput = new ArrayList<>(2);
+
+        lstOutput.add(aryCommand);
+        lstOutput.add(aryFile);
+
+        byte[] aryOutput = new byte[aryCommand.length + aryFile.length];
+
+        int intOffset = 0;
+
+        for (byte[] aryData : lstOutput) {
+            System.arraycopy(aryData, 0, aryOutput, intOffset, aryData.length);
+
+            intOffset += aryData.length;
+        }
+
+        return aryOutput;
+    }
+
+    public static byte[] handleMonitorOperation(String pStrFile, int pIntInterval) {
+
+        byte[] aryCommand = marshallInt(ECommand.MONITOR.getCode());
+        byte[] aryFile = marshallString(pStrFile);
+        byte[] aryCount = marshallInt(pIntInterval);
+
+        List<byte[]> lstOutput = new ArrayList<>(3);
+
+        lstOutput.add(aryCommand);
+        lstOutput.add(aryFile);
+        lstOutput.add(aryCount);
+
+        byte[] aryOutput = new byte[aryCommand.length + aryFile.length + aryCount.length];
+
+        int intOffset = 0;
+
+        for (byte[] aryData : lstOutput) {
+            System.arraycopy(aryData, 0, aryOutput, intOffset, aryData.length);
+
+            intOffset += aryData.length;
+        }
+
+        return aryOutput;
+    }
+
+    public static byte[] handleRenameOperation(String pStrFile, String pStrFileNew) {
+
+        byte[] aryCommand = marshallInt(ECommand.MOVE.getCode());
+        byte[] aryFile = marshallString(pStrFile);
+        byte[] aryFileNew = marshallString(pStrFileNew);
+
+        List<byte[]> lstOutput = new ArrayList<>(3);
+
+        lstOutput.add(aryCommand);
+        lstOutput.add(aryFile);
+        lstOutput.add(aryFileNew);
+
+        byte[] aryOutput = new byte[aryCommand.length + aryFile.length + aryFileNew.length];
+
+        int intOffset = 0;
+
+        for (byte[] aryData : lstOutput) {
+            System.arraycopy(aryData, 0, aryOutput, intOffset, aryData.length);
+
+            intOffset += aryData.length;
+        }
+
+        return aryOutput;
+    }
+
+    public static byte[] handleLastModiOperation(String pStrFile) {
+
+        byte[] aryCommand = marshallInt(ECommand.LASTMODI.getCode());
+        byte[] aryFile = marshallString(pStrFile);
+
+        List<byte[]> lstOutput = new ArrayList<>(2);
+
+        lstOutput.add(aryCommand);
+        lstOutput.add(aryFile);
+
+        byte[] aryOutput = new byte[aryCommand.length + aryFile.length];
+
+        int intOffset = 0;
+
+        for (byte[] aryData : lstOutput) {
+            System.arraycopy(aryData, 0, aryOutput, intOffset, aryData.length);
+
+            intOffset += aryData.length;
+        }
+
+        return aryOutput;
+    }
+
+}
+
+package comm;
+
+import cache.CFileCacheManager;
+import static comm.CNetworkManager.unmarshallInt;
+import static comm.CNetworkManager.unmarshallString;
+import static comm.CNetworkManager.unmarshallLong;
+import static comm.CNetworkManager.marshallInt;
+import static comm.CNetworkManager.marshallString;
+import static comm.CNetworkManager.marshallLong;
+import io.CFileFactory;
+import io.CFileFactory.IO_STATUS;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
+public class CServerManager {
+
+    // IP Address - <Seq Num, Cached result>
+    private static HashMap<String, HashMap<Integer, byte[]>> _serverClientsCache = new HashMap<>();
+
+    // File pathname - <IP Address, Server Time>
+    private static HashMap<String, HashMap<String, Long>> _serverFilesMonitor = new HashMap<>();
+
+    public static byte[] performOperation(byte[] pAryData, String pStrAddr) throws IOException {
+
+        int offset = 0;
+
+        // Get the sequence number
+        int seqNumber = unmarshallInt(pAryData, offset);
+        offset += 4;
+
+        HashMap<Integer, byte[]> clientCache = _serverClientsCache.get(pStrAddr);
+        if (clientCache == null) {
+            clientCache = new HashMap<>();
+            _serverClientsCache.put(pStrAddr, clientCache);
+        }
+
+        // Check the command
+        ECommand objCommand = ECommand.getCommand(unmarshallInt(pAryData, offset));
+        offset += 4;
+
+        // Print client IP, seq number, and action to be performed.
+        System.out.printf("IP: %-15s\tSeq #: %-8d\tAction: %-12s%n",
+                pStrAddr, seqNumber, objCommand.toString());
+
+        // Byte arraylist for storing results
+        ArrayList<Byte> lstBytes = new ArrayList<>();
+        byte[] arrBytes = null;
+
+        switch (objCommand) {
+
+            case CONN:
+                clientCache.clear();
+
+                addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
+                arrBytes = convertResult(lstBytes);
+
+                System.out.println("Client '" + pStrAddr + "' connected to server.\n");
+
+                break;
+
+            case ACK:
+                break;
+
+            case CREATE:
+                createFile(pAryData, offset, lstBytes);
+
+                arrBytes = convertResult(lstBytes);
+                printCodeMsg(arrBytes);
+
+                break;
+
+            case DELETE:
+                // Non-Idempotent
+                arrBytes = clientCache.get(seqNumber);
+                if (arrBytes != null) {
+
+                    System.out.println("One-update semantics, retrieving from cache..");
+                    printCodeMsg(arrBytes);
+                    return arrBytes;
+                }
+
+                // Perform action
+                deleteFromFile(pAryData, offset, lstBytes);
+
+                arrBytes = convertResult(lstBytes);
+                clientCache.put(seqNumber, arrBytes);
+                printCodeMsg(arrBytes);
+
+                // Update clients monitoring this file (if any)
+                update(unmarshallString(pAryData, offset).toString(), pStrAddr, arrBytes);
+
+                break;
+
+            case ERROR:
+                break;
+
+            case MONITOR:
+                // Monitors a specified file
+                monitorFile(pAryData, offset, lstBytes, pStrAddr);
+
+                arrBytes = convertResult(lstBytes);
+                printCodeMsg(arrBytes);
+
+                break;
+
+            case MOVE:
+                // Non-Idempotent
+                arrBytes = clientCache.get(seqNumber);
+                if (arrBytes != null) {
+
+                    System.out.println("One-update semantics, retrieving from cache..");
+                    printCodeMsg(arrBytes);
+                    return arrBytes;
+                }
+
+                // Perform action
+                moveOrRenameFile(pAryData, offset, lstBytes);
+
+                arrBytes = convertResult(lstBytes);
+                clientCache.put(seqNumber, arrBytes);
+                printCodeMsg(arrBytes);
+
+                break;
+
+            case READ:
+                readFromFile(pAryData, offset, lstBytes);
+
+                arrBytes = convertResult(lstBytes);
+                printCodeMsgContents(arrBytes);
+
+                break;
+
+            case UPDATE:
+                // Do what sia?
+                break;
+
+            case WRITE:
+                // Non-Idempotent
+                arrBytes = clientCache.get(seqNumber);
+                if (arrBytes != null) {
+
+                    System.out.println("One-update semantics, retrieving from cache..");
+                    printCodeMsg(arrBytes);
+                    return arrBytes;
+                }
+
+                // Perform action
+                writeToFile(pAryData, offset, lstBytes);
+
+                arrBytes = convertResult(lstBytes);
+                clientCache.put(seqNumber, arrBytes);
+                printCodeMsg(arrBytes);
+
+                // Update clients monitoring this file (if any)
+                update(unmarshallString(pAryData, offset).toString(), pStrAddr, arrBytes);
+
+                break;
+
+            case LASTMODI:
+                getLastModified(pAryData, offset, lstBytes);
+
+                arrBytes = convertResult(lstBytes);
+                printCodeLastModi(arrBytes);
+
+                break;
+
+            default:
+                break;
+        }
+
+        return arrBytes;
+    }
+
+    private static void createFile(byte[] pAryData, int offset, ArrayList<Byte> lstBytes) throws IOException {
+
+        String strPathName = unmarshallString(pAryData, offset).toString();
+
+        CFileFactory.createFile(strPathName, "");
+
+        addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
+        addToResult(lstBytes, "File '" + strPathName + "' created successfully!");
+    }
+
+    private static void readFromFile(byte[] pAryData, int offset, ArrayList<Byte> lstBytes) throws IOException {
+
+        String strPathName = unmarshallString(pAryData, offset).toString();
+        offset += strPathName.length() + 4;
+
+        int fileOffset = unmarshallInt(pAryData, offset);
+        offset += 4;
+
+        int numBytesToRead = unmarshallInt(pAryData, offset);
+        offset += 4;
+
+        StringBuilder sb = new StringBuilder();
+        IO_STATUS ioStatus = CFileFactory.readFromFile(
+                strPathName, fileOffset, numBytesToRead, sb);
+
+        switch (ioStatus) {
+            case FILE_NOT_FOUND:
+                addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
+                addToResult(lstBytes, "READ ERROR: FILE NOT FOUND LA!");
+                addToResult(lstBytes, "");
+                break;
+            case OFFSET_EXCEEDS_LENGTH:
+                addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
+                addToResult(lstBytes, "READ ERROR: OFFSET EXCEEDS LENGTH LA!");
+                addToResult(lstBytes, "");
+                break;
+            case SUCCESS:
+                addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
+                addToResult(lstBytes, ("Read data from '" + strPathName + "' successfully."));
+                addToResult(lstBytes, sb.toString());
+
+                long lastModifiedTime = CFileFactory.getLastModifiedTime(strPathName);
+                addToResult(lstBytes, marshallLong(lastModifiedTime));
+
+                long fileSize = CFileFactory.getFileSize(strPathName);
+                addToResult(lstBytes, marshallLong(fileSize));
+                break;
+            default:
+                break;
+        }
+    }
+
+    private static void writeToFile(byte[] pAryData, int offset, ArrayList<Byte> lstBytes) throws IOException {
+
+        String strPathName = unmarshallString(pAryData, offset).toString();
+        offset += strPathName.length() + 4;
+
+        int fileOffset = unmarshallInt(pAryData, offset);
+        offset += 4;
+
+        String data = unmarshallString(pAryData, offset).toString();
+
+        IO_STATUS ioStatus = CFileFactory.writeToFile(strPathName, fileOffset, data);
+
+        switch (ioStatus) {
+            case FILE_NOT_FOUND:
+                addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
+                addToResult(lstBytes, "WRITE ERROR: FILE NOT FOUND LA!");
+                break;
+            case OFFSET_EXCEEDS_LENGTH:
+                addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
+                addToResult(lstBytes, "WRITE ERROR: OFFSET EXCEEDS LENGTH LA!");
+                break;
+            case SUCCESS:
+                addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
+                addToResult(lstBytes, "Written data to '" + strPathName + "' successfully.");
+
+                long lngLastModi = CFileFactory.getLastModifiedTime(strPathName);
+                addToResult(lstBytes, marshallLong(lngLastModi));
+                break;
+            default:
+                break;
+        }
+    }
+
+    private static void deleteFromFile(byte[] pAryData, int offset, ArrayList<Byte> lstBytes) throws IOException {
+
+        String strPathName = unmarshallString(pAryData, offset).toString();
+        offset += strPathName.length() + 4;
+
+        int fileOffset = unmarshallInt(pAryData, offset);
+        offset += 4;
+
+        int numBytesToDelete = unmarshallInt(pAryData, offset);
+
+        IO_STATUS ioStatus = CFileFactory.deleteFromFile(
+                strPathName, fileOffset, numBytesToDelete);
+
+        switch (ioStatus) {
+            case FILE_NOT_FOUND:
+                addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
+                addToResult(lstBytes, "DELETE ERROR: FILE NOT FOUND LA!");
+                break;
+            case OFFSET_EXCEEDS_LENGTH:
+                addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
+                addToResult(lstBytes, "DELETE ERROR: OFFSET EXCEEDS LENGTH LA!");
+                break;
+            case SUCCESS:
+                addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
+                addToResult(lstBytes, "Deleted data from '" + strPathName + "' successfully.");
+
+                long lngLastModi = CFileFactory.getLastModifiedTime(strPathName);
+                addToResult(lstBytes, marshallLong(lngLastModi));
+                break;
+            default:
+                break;
+        }
+    }
+
+    private static void moveOrRenameFile(byte[] pAryData, int offset, ArrayList<Byte> lstBytes) throws IOException {
+
+        String strPathNameOld = unmarshallString(pAryData, offset).toString();
+        offset += strPathNameOld.length() + 4;
+
+        String strPathNameNew = unmarshallString(pAryData, offset).toString();
+
+        IO_STATUS ioStatus = CFileFactory.moveOrRenameFile(strPathNameOld, strPathNameNew);
+
+        switch (ioStatus) {
+            case FILE_NOT_FOUND:
+                addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
+                addToResult(lstBytes, "MOVE/RENAME ERROR: FILE NOT FOUND LA!");
+                break;
+            case FILE_NAME_ALREADY_EXISTS:
+                addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
+                addToResult(lstBytes, "MOVE/RENAME ERROR: File with same name exists at destination.");
+                break;
+            case SUCCESS:
+                addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
+                addToResult(lstBytes, "Moved/Renamed from '" + strPathNameOld + "' to '"
+                        + strPathNameNew + "' successfully.");
+
+                monitorMovedOrRenamed(strPathNameOld, strPathNameNew);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private static void getLastModified(byte[] pAryData, int offset,
+            ArrayList<Byte> lstBytes) throws IOException {
+
+        String strPathName = unmarshallString(pAryData, offset).toString();
+        IO_STATUS ioStatus = CFileFactory.findFile(strPathName);
+
+        switch (ioStatus) {
+            case FILE_NOT_FOUND:
+                addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
+                addToResult(lstBytes, marshallLong(0));
+                break;
+            case SUCCESS:
+                addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
+                addToResult(lstBytes, marshallLong(
+                        CFileFactory.getLastModifiedTime(strPathName)));
+                break;
+            default:
+                break;
+        }
+    }
+
+    /**
+     * NOTE: Seq number, Cmd, File path name, Period (ms) *
+     */
+    private static void monitorFile(byte[] pAryData, int offset,
+            ArrayList<Byte> lstBytes, String strIPAddr) throws IOException {
+
+        String strPathName = unmarshallString(pAryData, offset).toString();
+        offset += strPathName.length() + 4;
+
+        // Period in milliseconds (int)
+        int period = unmarshallInt(pAryData, offset);
+
+        if (CFileFactory.findFile(strPathName) == IO_STATUS.FILE_NOT_FOUND) {
+            addToResult(lstBytes, marshallInt(ECommand.ERROR.getCode()));
+            addToResult(lstBytes, ("ERROR : File " + strPathName + " not found"));
+        } else {
+            HashMap<String, Long> fileMonitor = _serverFilesMonitor.get(strPathName);
+            if (fileMonitor == null) {
+                fileMonitor = new HashMap<>();
+                _serverFilesMonitor.put(strPathName, fileMonitor);
+            }
+
+            fileMonitor.put(strIPAddr, System.currentTimeMillis() + period);
+
+            addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
+            addToResult(lstBytes, ("Client '" + strIPAddr + "' monitoring '"
+                    + strPathName + "' for " + period + " ms."));
+        }
+    }
+
+    private static void update(String strPathName, String strIPAddr, byte[] arrBytes) throws IOException {
+
+        HashMap<String, Long> fileMonitor = _serverFilesMonitor.get(strPathName);
+        if (fileMonitor == null) {
+            return;
+        }
+
+        // Remove expired monitors for the specified file
+        long currSysTime = System.currentTimeMillis();
+        Iterator<Map.Entry<String, Long>> iter = fileMonitor.entrySet().iterator();
+        while (iter.hasNext()) {
+
+            Map.Entry<String, Long> mapEntry = iter.next();
+            if (mapEntry.getValue() < currSysTime) {
+
+                iter.remove();
+            }
+        }
+
+        // Remove from list of monitored files, and do nothing
+        if (fileMonitor.isEmpty()) {
+            _serverFilesMonitor.remove(strPathName);
+            return;
+        }
+
+        int up_offset = 0;
+
+        int up_code = unmarshallInt(arrBytes, up_offset);
+        up_offset += 4;
+
+        // Changes were made successfully to a monitored file
+        if (ECommand.getCommand(up_code) == ECommand.ACK) {
+
+            // Get the (possibly) updated file contents
+            StringBuilder sb = new StringBuilder();
+            CFileFactory.readFromFile(
+                    strPathName, 0, CFileFactory.getFileSize(strPathName), sb);
+
+            // NOTE: strIPAddr contains IP address of client who made the changes
+            System.out.println("File at '" + strPathName + "' changed by client '"
+                    + strIPAddr + "'. Updating all clients monitoring this file.");
+            System.out.println("The updated contents: " + sb.toString() + "\n");
+
+            // Update all clients monitoring this file
+            Set<String> lstClients = fileMonitor.keySet();
+
+            String strText = strPathName + "' has been modified by " + strIPAddr;
+
+            byte[] aryOutput = marshallString(strText);
+            byte[] aryContents = marshallString(sb.toString());
+            byte[] aryModi = marshallLong(CFileFactory.getLastModifiedTime(strPathName));
+
+            byte[] aryFinalOutput = new byte[aryOutput.length + aryContents.length + aryModi.length];
+
+            System.arraycopy(aryOutput, 0, aryFinalOutput, 0, aryOutput.length);
+            System.arraycopy(aryContents, 0, aryFinalOutput, aryOutput.length, aryContents.length);
+            System.arraycopy(aryModi, 0, aryFinalOutput, aryOutput.length + aryContents.length, aryModi.length);
+
+            for (String ip : lstClients) {
+                System.out.println("Updating client '" + ip + "'..");
+                CUDPClient.sendData(ip, aryFinalOutput, 2222);
+            }
+
+            System.out.println();
+        }
+    }
+
+    private static void monitorMovedOrRenamed(String strPathNameOld, String strPathNameNew) {
+
+        HashMap<String, Long> fileMonitor = _serverFilesMonitor.get(strPathNameOld);
+        if (fileMonitor != null) {
+
+            _serverFilesMonitor.remove(strPathNameOld);
+            _serverFilesMonitor.put(strPathNameNew, fileMonitor);
+        }
+    }
+
+    private static void addToResult(ArrayList<Byte> lstBytes, String str) {
+        addToResult(lstBytes, marshallString(str));
+    }
+
+    private static void addToResult(ArrayList<Byte> lstBytes, byte[] arrBytes) {
+
+        for (byte b : arrBytes) {
+            lstBytes.add(b);
+        }
+    }
+
+    private static byte[] convertResult(ArrayList<Byte> lstBytes) {
+
+        byte[] arrBytes = new byte[lstBytes.size()];
+        for (int i = 0; i < lstBytes.size(); i++) {
+            arrBytes[i] = lstBytes.get(i);
+        }
+
+        return arrBytes;
+    }
+
+    private static void printCodeMsg(byte[] arrBytes) {
+
+        int un_offset = 0;
+
+        int un_code = unmarshallInt(arrBytes, un_offset);
+        String str_un_code = ECommand.getCommand(un_code).toString();
+        un_offset += 4;
+
+        String un_msg = unmarshallString(arrBytes, un_offset).toString();
+
+        System.out.printf("Result: %-12s\tMsg: %-40s%n%n", str_un_code, un_msg);
+    }
+
+    private static void printCodeMsgContents(byte[] arrBytes) {
+
+        int un_offset = 0;
+
+        int un_code = unmarshallInt(arrBytes, un_offset);
+        ECommand cmd = ECommand.getCommand(un_code);
+        String str_un_code = cmd.toString();
+        un_offset += 4;
+
+        String un_msg = unmarshallString(arrBytes, un_offset).toString();
+        un_offset += (4 + un_msg.length());
+
+        System.out.printf("Result: %-12s\tMsg: %-40s",
+                str_un_code, un_msg);
+
+        if (cmd == ECommand.ACK) {
+
+            String un_contents = unmarshallString(arrBytes, un_offset).toString();
+            System.out.printf("\tContents: %-80s", un_contents);
+        }
+        System.out.printf("%n%n");
+    }
+
+    private static void printCodeLastModi(byte[] arrBytes) {
+
+        int un_offset = 0;
+
+        int un_code = unmarshallInt(arrBytes, un_offset);
+        String str_un_code = ECommand.getCommand(un_code).toString();
+        un_offset += 4;
+
+        long un_lastModi = unmarshallLong(arrBytes, un_offset);
+
+        System.out.printf("Result: %-12s\tLast Modified: %-20d%n%n", str_un_code, un_lastModi);
+    }
+
+    public static byte[] performMonitoringOperation(String pStrFileName,
+            byte[] pAryData, String pStrAddr) throws IOException {
+
+        ArrayList<Byte> lstBytes = new ArrayList<>();
+
+        String strMsg = unmarshallString(pAryData, 4).toString();
+        String strData = unmarshallString(pAryData, 8 + strMsg.length())
+                .toString();
+        long lngModi = unmarshallLong(pAryData,
+                12 + strMsg.length() + strData.length());
+
+        System.out.println(strMsg);
+        System.out.println("New Contents " + strData);
+
+        CFileCacheManager.setFileCache(pStrFileName, strData, lngModi);
+
+        addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
+
+        return convertResult(lstBytes);
+
+    }
+}
+
+package comm;
+
+public class CNetworkManager {
+
+    public static int unmarshallInt(byte[] pAryData, int pIntOffset) {
+
+        int intValue = (int) pAryData[pIntOffset + 3] & 0xFF;
+        intValue += ((int) pAryData[pIntOffset + 2] & 0xFF) << 8;
+        intValue += ((int) pAryData[pIntOffset + 1] & 0xFF) << 16;
+        intValue += ((int) pAryData[pIntOffset] & 0xFF) << 24;
+
+        return intValue;
+    }
+
+    public static byte[] marshallInt(int pIntData) {
+
+        byte[] aryData = new byte[4];
+
+        for (int i = 3; i >= 0; i--) {
+            aryData[i] = (byte) (pIntData & 0xff);
+            pIntData >>>= 8;
+        }
+
+        return aryData;
+    }
+
+    public static long unmarshallLong(byte[] pAryData, int pIntOffset) {
+
+        long intValue = (long) pAryData[pIntOffset + 7] & 0xFF;
+        intValue += ((long) pAryData[pIntOffset + 6] & 0xFF) << 8;
+        intValue += ((long) pAryData[pIntOffset + 5] & 0xFF) << 16;
+        intValue += ((long) pAryData[pIntOffset + 4] & 0xFF) << 24;
+        intValue += ((long) pAryData[pIntOffset + 3] & 0xFF) << 32;
+        intValue += ((long) pAryData[pIntOffset + 2] & 0xFF) << 40;
+        intValue += ((long) pAryData[pIntOffset + 1] & 0xFF) << 48;
+        intValue += ((long) pAryData[pIntOffset] & 0xFF) << 56;
+
+        return intValue;
+    }
+
+    public static byte[] marshallLong(long pIntData) {
+
+        byte[] aryData = new byte[8];
+
+        for (int i = 7; i >= 0; i--) {
+            aryData[i] = (byte) (pIntData & 0xff);
+            pIntData >>>= 8;
+        }
+
+        return aryData;
+    }
+
+    public static StringBuilder unmarshallString(byte[] pAryData, int pIntOffset) {
+
+        int intLength = unmarshallInt(pAryData, pIntOffset);
+
+        StringBuilder objSB = new StringBuilder();
+
+        int intCount = 0;
+
+        pIntOffset += 4;
+
+        while (intCount < intLength) {
+            objSB.append((char) pAryData[pIntOffset + intCount]);
+            intCount++;
+        }
+
+        return objSB;
+    }
+
+    public static byte[] marshallString(String pStrData) {
+
+        int intLength = pStrData.length();
+
+        byte[] aryData = new byte[intLength + 4];
+
+        System.arraycopy(marshallInt(intLength), 0, aryData, 0, 4);
+
+        System.arraycopy(pStrData.getBytes(), 0, aryData, 4, pStrData.length());
+
+        return aryData;
+    }
+
+}
+
+package comm;
+
+import static comm.CNetworkManager.marshallInt;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
+import util.CRandomGenerator;
+
+public class CUDPClient {
+
+    private static int intSeqId = 0;
+
+    private static final int intFailure = 0;
+
+    public static byte[] connectionEstablish(String pStrAdd) throws SocketException, UnknownHostException, IOException {
+        
+        byte[] aryData = marshallInt(ECommand.CONN.getCode());
+        byte[] arySeq = CNetworkManager.marshallInt(intSeqId);
+
+        byte[] arySent = new byte[aryData.length + arySeq.length];
+
+        System.arraycopy(arySeq, 0, arySent, 0, arySeq.length);
+        System.arraycopy(aryData, 0, arySent, arySeq.length, aryData.length);
+
+        // get a datagram socket
+        DatagramSocket socket = new DatagramSocket();
+        socket.setSoTimeout(2000);
+        // send request
+        byte[] buf = new byte[1472];
+
+        InetAddress address = InetAddress.getByName(pStrAdd);
+        DatagramPacket packet = new DatagramPacket(arySent, arySent.length, address, 4445);
+
+        socket.send(packet);
+
+        DatagramPacket response = new DatagramPacket(buf, buf.length);
+
+        while (true) {
+            try {
+                socket.receive(response);
+
+                byte[] aryOutput = new byte[response.getData().length];
+
+                System.arraycopy(response.getData(), 0, aryOutput, 0, response.getData().length);
+                socket.close();
+
+                return aryOutput;
+
+            } catch (SocketTimeoutException e) {
+                // resend
+                socket.send(packet);
+            }
+        }
+    }
+
+    public static byte[] sendData(String pStrAdd, byte[] pAryData) throws SocketException, UnknownHostException, IOException {
+        return sendData(pStrAdd, pAryData, 4445);
+    }
+
+    public static byte[] sendData(String pStrAdd, byte[] pAryData, int pIntPort) throws SocketException, UnknownHostException, IOException {
+
+        byte[] arySeq = CNetworkManager.marshallInt(intSeqId);
+
+        byte[] arySent = new byte[pAryData.length + arySeq.length];
+
+        System.arraycopy(arySeq, 0, arySent, 0, arySeq.length);
+
+        System.arraycopy(pAryData, 0, arySent, arySeq.length, pAryData.length);
+
+        // get a datagram socket
+        DatagramSocket socket = new DatagramSocket();
+        socket.setSoTimeout(2000);
+        // send request
+        byte[] buf = new byte[1024];
+
+        InetAddress address = InetAddress.getByName(pStrAdd);
+        DatagramPacket packet = new DatagramPacket(arySent, arySent.length, address, pIntPort);
+
+        if (CRandomGenerator.getInt(1, 10) > intFailure) {
+            socket.send(packet);
+        } else {
+            System.out.println("Sent packet dropped");
+        }
+
+        DatagramPacket response = new DatagramPacket(buf, buf.length);
+
+        int intRetry = 0;
+        
+        while (intRetry < 10) {
+            try {
+                socket.receive(response);
+
+                if (CRandomGenerator.getInt(1, 10) < intFailure) {
+                    System.out.println("Recieved packet dropped. Retry " + intRetry);
+                    socket.send(packet);
+                    intRetry++;
+                } else {
+                    byte[] aryOutput = new byte[response.getData().length];
+
+                    System.arraycopy(response.getData(), 0, aryOutput, 0, response.getData().length);
+                    socket.close();
+
+                    intSeqId++;
+
+                    return aryOutput;
+                }
+
+            } catch (SocketTimeoutException e) {
+                // resend
+                if (CRandomGenerator.getInt(1, 10) > intFailure) {
+                    socket.send(packet);
+                    intRetry++;
+                } else {
+                    System.out.println("Sent packet dropped. Retry " + intRetry);
+                }
+            }
+        }
+        System.out.println("Data cannot be send. Network is unstable");
+        return null;
+    }
+}
+
+package comm;
+
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+
+public class CUDPServer {
+
+    protected DatagramSocket socket = null;
+
+    public CUDPServer() throws SocketException {
+        socket = new DatagramSocket(4445);
+    }
+
+    public void execute() throws IOException {
+
+        while (true) {
+            byte[] aryBuffer = new byte[1472];
+
+            DatagramPacket objPacket = new DatagramPacket(aryBuffer, aryBuffer.length);
+            socket.receive(objPacket);
+
+            byte[] aryOutput = CServerManager.performOperation(objPacket.getData(), objPacket.getAddress().getHostAddress());
+
+            InetAddress objAddress = objPacket.getAddress();
+
+            int intPort = objPacket.getPort();
+
+            objPacket = new DatagramPacket(aryOutput, aryOutput.length, objAddress, intPort);
+
+            socket.send(objPacket);
+        }
+        //socket.close();
+
+    }
+}
+
+package comm;
+
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+
+public class CUDPServer_MultiCast {
+
+    protected DatagramSocket socket = null;
+
+    public CUDPServer_MultiCast() throws SocketException {
+        socket = new DatagramSocket(2222);
+    }
+
+    public void execute(String pStrFileNme, long pLngPeriod) throws IOException {
+
+        long lngTimeStart = System.currentTimeMillis();
+
+        socket.setSoTimeout(2000);
+
+        while (System.currentTimeMillis() <= pLngPeriod + lngTimeStart) {
+
+            byte[] aryBuffer = new byte[1024];
+
+            DatagramPacket objPacket = new DatagramPacket(aryBuffer, aryBuffer.length);
+            try {
+                socket.receive(objPacket);
+
+                byte[] aryOutput = CServerManager.performMonitoringOperation(pStrFileNme, objPacket.getData(), objPacket.getAddress().getHostAddress());
+
+                InetAddress objAddress = objPacket.getAddress();
+
+                int intPort = objPacket.getPort();
+
+                objPacket = new DatagramPacket(aryOutput, aryOutput.length, objAddress, intPort);
+
+                socket.send(objPacket);
+            } catch (SocketTimeoutException e) {
+                // timeout exception.
+            }
+        }
+        socket.close();
+
+    }
+}
+
+package comm;
+
+public enum ECommand {
+    READ(1),
+    WRITE(2),
+    DELETE(3),
+    CREATE(4),
+    MOVE(5),
+    MONITOR(6),
+    ACK(7),
+    ERROR(8),
+    UPDATE(9),
+    LASTMODI(10),
+    CONN(98),
+    EXIT(99);
+
+    private final int intCode;
+
+    ECommand(int pIntCode) {
+        intCode = pIntCode;
+    }
+
+    public int getCode() {
+        return intCode;
+    }
+
+    public static ECommand getCommand(int pIntCode) {
+        for (ECommand objType : ECommand.values()) {
+            if (objType.getCode() == pIntCode) {
+                return objType;
+            }
+        }
+        return null;
+    }
+}
+
+package io;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
+
+import settings.CSettingManager;
+
+public class CFileFactory {
+
+    private static Path objFolderPath = null;
+
+    private CFileFactory() {
+
+    }
+
+    public static void createFile(String pStrFile, String pStrContents) throws IOException {
+
+        objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
+
+        Path objFilePath = objFolderPath.resolve(pStrFile);
+        if (Files.notExists(objFilePath.getParent())) {
+            createFolder(objFilePath.getParent());
+        }
+
+        Files.write(objFilePath, pStrContents.getBytes());
+    }
+
+    public static void createFolder(Path pObjFilePath) throws IOException {
+
+        Files.createDirectories(pObjFilePath);
+    }
+
+    public static InputStream getFile_InputStream(String pStrPath) throws IOException {
+        
+        return getFile_InputStream(Paths.get(pStrPath));
+    }
+
+    private static InputStream getFile_InputStream(Path pObjPath) throws IOException {
+        
+        return Files.newInputStream(pObjPath, StandardOpenOption.READ);
+    }
+
+    public static IO_STATUS readFromFile(String pathname, int offset,
+            int numBytes, StringBuilder sb) throws IOException {
+
+        objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
+        Path objFilePath = objFolderPath.resolve(pathname);
+        if (!Files.exists(objFilePath)) {
+            return IO_STATUS.FILE_NOT_FOUND;
+        }
+
+        InputStream is = getFile_InputStream(objFilePath);
+        byte[] bytesArr = new byte[numBytes];
+
+        // Reset input stream, tries to skip 'offset' number of bytes
+        if (is.skip(offset) < offset) {
+
+            is.close();
+            return IO_STATUS.OFFSET_EXCEEDS_LENGTH;
+        }
+
+        // Read from the input stream, result appended to the StringBuilder
+        int is_result = is.read(bytesArr, 0, numBytes);
+        if (is_result != -1) {
+
+            sb.append(new String(bytesArr));
+        }
+
+        is.close();
+        return IO_STATUS.SUCCESS;
+    }
+
+    public static IO_STATUS writeToFile(String pathname, int offset, String data) throws IOException {
+
+        objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
+        Path objFilePath = objFolderPath.resolve(pathname);
+        if (!Files.exists(objFilePath)) {
+            return IO_STATUS.FILE_NOT_FOUND;
+        }
+
+        // Gets the SeekableByteChannel for writing to file
+        SeekableByteChannel sbc = Files.newByteChannel(objFilePath,
+                StandardOpenOption.READ, StandardOpenOption.WRITE);
+
+        // Tries to offset the current position in the file
+        if (offset > sbc.size()) {
+
+            sbc.close();
+            return IO_STATUS.OFFSET_EXCEEDS_LENGTH;
+        } else {
+            sbc.position(offset);
+        }
+
+        long remaining = sbc.size() - sbc.position();
+        ByteBuffer rbb = ByteBuffer.allocate((int) remaining);
+        sbc.read(rbb);
+        String remainingStr = new String(rbb.array());
+
+        // Writes to the file
+        data += remainingStr;
+        sbc.position(offset);
+        sbc.write(ByteBuffer.wrap(data.getBytes()));
+
+        sbc.close();
+        return IO_STATUS.SUCCESS;
+    }
+
+    public static IO_STATUS deleteFromFile(String pathname, int offset, int numBytes) throws IOException {
+
+        objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
+        Path objFilePath = objFolderPath.resolve(pathname);
+        if (!Files.exists(objFilePath)) {
+            return IO_STATUS.FILE_NOT_FOUND;
+        }
+
+        // Gets the SeekableByteChannel for writing to file
+        SeekableByteChannel sbc = Files.newByteChannel(objFilePath,
+                StandardOpenOption.READ, StandardOpenOption.WRITE);
+
+        // Tries to offset the current position in the file
+        if (offset > sbc.size()) {
+
+            sbc.close();
+            return IO_STATUS.OFFSET_EXCEEDS_LENGTH;
+        } else {
+            sbc.position(offset);
+        }
+
+        long remaining = sbc.size() - sbc.position();
+        ByteBuffer rbb = ByteBuffer.allocate((int) remaining);
+        sbc.read(rbb);
+        String strAfterOffset = new String(rbb.array());
+
+        // Remove from the contents the specified number of bytes
+        if (numBytes > strAfterOffset.length()) {
+            strAfterOffset = "";
+        } else {
+            strAfterOffset = strAfterOffset.substring(numBytes);
+        }
+
+        long numDeletedBytes = remaining - strAfterOffset.length();
+        /*System.out.println("# of deleted bytes: " + numDeletedBytes);*/
+
+        // Writes to the file (Moving the contents to replace deleted contents)
+        sbc.position(offset);
+        sbc.write(ByteBuffer.wrap(strAfterOffset.getBytes()));
+
+        // Truncate based on actual number of deleted bytes
+        sbc.truncate(sbc.size() - numDeletedBytes);
+
+        sbc.close();
+        return IO_STATUS.SUCCESS;
+    }
+
+    public static IO_STATUS moveOrRenameFile(String pathnameOld, String pathnameNew) throws IOException {
+
+        objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
+        Path objFilePathOld = objFolderPath.resolve(pathnameOld);
+        Path objFilePathNew = objFolderPath.resolve(pathnameNew);
+
+        // Check if the specified file exists
+        if (!Files.exists(objFilePathOld)) {
+            return IO_STATUS.FILE_NOT_FOUND;
+        }
+
+        // Check if a file with similar name exists at the target destination
+        if (Files.exists(objFilePathNew)) {
+            return IO_STATUS.FILE_NAME_ALREADY_EXISTS;
+        }
+
+        // Rename
+        if (objFilePathOld.getParent().equals(objFilePathNew.getParent())) {
+
+            Files.move(objFilePathOld, objFilePathOld.resolveSibling(
+                    objFilePathNew.getFileName()));
+        } // Move
+        else {
+
+            if (Files.notExists(objFilePathNew.getParent())) {
+                createFolder(objFilePathNew.getParent());
+            }
+
+            Files.move(objFilePathOld, objFilePathNew.getParent().resolve(
+                    objFilePathOld.getFileName()));
+        }
+
+        return IO_STATUS.SUCCESS;
+    }
+
+    public static IO_STATUS findFile(String pathname) throws IOException {
+
+        objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
+        Path objFilePath = objFolderPath.resolve(pathname);
+        if (!Files.exists(objFilePath)) {
+            return IO_STATUS.FILE_NOT_FOUND;
+        }
+
+        return IO_STATUS.SUCCESS;
+    }
+
+    public static long getLastModifiedTime(String pathname) throws IOException {
+
+        objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
+        Path objFilePath = objFolderPath.resolve(pathname);
+        BasicFileAttributes attrs = Files.readAttributes(objFilePath, BasicFileAttributes.class);
+
+        return attrs.lastModifiedTime().toMillis();
+    }
+
+    public static int getFileSize(String pathname) throws IOException {
+
+        objFolderPath = Paths.get(CSettingManager.getSetting("File_Location"));
+        Path objFilePath = objFolderPath.resolve(pathname);
+        BasicFileAttributes attrs = Files.readAttributes(objFilePath, BasicFileAttributes.class);
+
+        return ((int) attrs.size());
+    }
+
+    public enum IO_STATUS {
+        SUCCESS,
+        FILE_NOT_FOUND,
+        OFFSET_EXCEEDS_LENGTH,
+        FILE_NAME_ALREADY_EXISTS;
+    }
+}
+
+package main;
+
+import comm.CUDPServer;
+import java.io.IOException;
+import java.net.SocketException;
+
+public class AlmightyFileServer {
+
+    public static void main(String[] args) {
+        
+        try {
+            CUDPServer objServer = new CUDPServer();
+            objServer.execute();
+        }
+        catch (SocketException e) {
+            e.printStackTrace();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+package main;
+
+import cache.CFileCacheManager;
+import client.CClientManager;
+
+import comm.CNetworkManager;
+import comm.CUDPClient;
+import static comm.CUDPClient.connectionEstablish;
+import comm.CUDPServer_MultiCast;
+import comm.ECommand;
+
+import java.io.IOException;
+import java.util.Scanner;
+
+public class FileClient {
+
+    private static Scanner sc = new Scanner(System.in);
+
+    private static int displayServerReadResponse(byte[] pAryData, String pStrFileName, int pIntOffset, int pIntCount) {
+        int intCode = CNetworkManager.unmarshallInt(pAryData, 0);
+
+        String strMsg = CNetworkManager.unmarshallString(pAryData, 4).toString();
+
+        System.out.println(strMsg);
+
+        if (intCode == ECommand.ACK.getCode()) {
+
+            String strReadData = CNetworkManager.unmarshallString(pAryData, strMsg.length() + 8).toString();
+
+            if (pIntOffset + pIntCount >= strReadData.length()) {
+                System.out.println("Data Read : " + strReadData.substring(pIntOffset));
+            } else {
+                System.out.println("Data Read : " + strReadData.substring(pIntOffset, pIntOffset + pIntCount));
+            }
+
+            CFileCacheManager.setFileCache(pStrFileName, strReadData, CNetworkManager.unmarshallLong(pAryData, strReadData.length() + strMsg.length() + 12));
+        }
+
+        return intCode;
+    }
+
+    private static int displayServerWriteResponse(byte[] pAryData, String pStrFileName, int pIntOffset, String pStrData) {
+        int intCode = CNetworkManager.unmarshallInt(pAryData, 0);
+
+        String strMsg = CNetworkManager.unmarshallString(pAryData, 4).toString();
+
+        System.out.println(strMsg);
+
+        if (intCode == ECommand.ACK.getCode()) {
+
+            long lngLastModi = CNetworkManager.unmarshallLong(pAryData, strMsg.length() + 8);
+
+            if (CFileCacheManager.fileInCache(pStrFileName)) {
+                StringBuilder objOut = new StringBuilder(CFileCacheManager.getCacheBlock(pStrFileName, 0));
+
+                objOut.insert(pIntOffset, pStrData);
+
+                CFileCacheManager.setFileCache(pStrFileName, objOut.toString(), lngLastModi, false);
+            }
+
+        }
+
+        return intCode;
+    }
+
+    private static int displayServerDeleteResponse(byte[] pAryData, String pStrFileName, int pIntOffset, int pIntCount) {
+        int intCode = CNetworkManager.unmarshallInt(pAryData, 0);
+
+        String strMsg = CNetworkManager.unmarshallString(pAryData, 4).toString();
+
+        System.out.println(strMsg);
+
+        if (intCode == ECommand.ACK.getCode()) {
+
+            long lngLastModi = CNetworkManager.unmarshallLong(pAryData, strMsg.length() + 8);
+
+            if (CFileCacheManager.fileInCache(pStrFileName)) {
+                StringBuilder objOut = new StringBuilder(CFileCacheManager.getCacheBlock(pStrFileName, 0));
+
+                objOut.delete(pIntOffset, pIntOffset + pIntCount);
+
+                CFileCacheManager.setFileCache(pStrFileName, objOut.toString(), lngLastModi, false);
+            }
+
+        }
+
+        return intCode;
+    }
+
+    private static int displayServerResponse(byte[] pAryData, ECommand pObjCommand) {
+        int intCode = CNetworkManager.unmarshallInt(pAryData, 0);
+
+        String strMsg = CNetworkManager.unmarshallString(pAryData, 4).toString();
+
+        System.out.println(strMsg);
+
+        long lngLastModi;
+
+        if (intCode == ECommand.ACK.getCode()) {
+
+        }
+
+        return intCode;
+    }
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String[] args) throws IOException {
+
+        String strServerAdd = "172.22.248.33";
+        System.out.println("Initalizing system..\n");
+
+        connectionEstablish(strServerAdd);
+
+        int intFreshness = getIntChoice("Set Freshness Interval (sec) ");
+
+        System.out.println("\nSystem initialization completed!");
+
+        System.out.println("\nWelcome to Almighty Distributed File System");
+
+        int intChoice;
+        String strFile;
+
+        int intOffset;
+        int intCount;
+
+        byte[] aryOutput;
+        byte[] data;
+        do {
+            displayMainMenu();
+            intChoice = getIntChoice();
+
+            switch (ECommand.getCommand(intChoice)) {
+                case READ:
+
+                    strFile = getStringChoice();
+                    intOffset = getIntChoice();
+                    intCount = getIntChoice();
+
+                    int intCount2 = intCount;
+
+                    if (CFileCacheManager.fileInCache(strFile)) {
+
+                        if (CClientManager.validCache(strFile, strServerAdd, intFreshness * 1000)) {
+                            System.out.println("Reading from Cache");
+
+                            String strData = CFileCacheManager.getCacheBlock(strFile, 0);
+
+                            if (intOffset > strData.length()) {
+                                System.out.println("Invalid Offset");
+                            } else if (intOffset + intCount >= strData.length()) {
+                                System.out.println(CFileCacheManager.getCacheBlock(strFile, 0).substring(intOffset));
+                            } else {
+                                System.out.println(CFileCacheManager.getCacheBlock(strFile, 0).substring(intOffset, intOffset + intCount));
+                            }
+
+                            break;
+                        }
+                    } else {
+                        intCount2 = intCount;
+                        intCount = 850;
+                    }
+                    aryOutput = CClientManager.handleReadOperation(strFile, intOffset, intCount);
+
+                    data = CUDPClient.sendData(strServerAdd, aryOutput);
+
+                    if (data != null) {
+                        displayServerReadResponse(data, strFile, intOffset, intCount2);
+                    }
+                    break;
+                case WRITE:
+
+                    strFile = getStringChoice();
+                    intOffset = getIntChoice();
+                    String strData = getStringChoice();
+
+                    aryOutput = CClientManager.handleWriteOperation(strFile, intOffset, strData);
+
+                    data = CUDPClient.sendData(strServerAdd, aryOutput);
+
+                    if (data != null) {
+                        displayServerWriteResponse(data, strFile, intOffset, strData);
+                    }
+
+                    break;
+                case DELETE:
+
+                    strFile = getStringChoice();
+                    intOffset = getIntChoice();
+                    intCount = getIntChoice();
+
+                    aryOutput = CClientManager.handleDeleteOperation(strFile, intOffset, intCount);
+
+                    data = CUDPClient.sendData(strServerAdd, aryOutput);
+
+                    if (data != null) {
+                        displayServerDeleteResponse(data, strFile, intOffset, intCount);
+                    }
+                    break;
+                case CREATE:
+                    strFile = getStringChoice();
+
+                    aryOutput = CClientManager.handleCreateOperation(strFile);
+
+                    data = CUDPClient.sendData(strServerAdd, aryOutput);
+
+                    if (data != null) {
+                        displayServerResponse(data, ECommand.CREATE);
+                    }
+                    break;
+                case MONITOR:
+                    strFile = getStringChoice();
+                    intCount = getIntChoice();
+
+                    aryOutput = CClientManager.handleMonitorOperation(strFile, intCount);
+
+                    data = CUDPClient.sendData(strServerAdd, aryOutput);
+
+                    if (data != null) {
+                        int intCode = displayServerResponse(data, ECommand.MONITOR);
+
+                        if (intCode == ECommand.ACK.getCode()) {
+                            new CUDPServer_MultiCast().execute(strFile, intCount);
+                        }
+                    }
+                    //Start Mointor
+                    //displayServerResponse(data, ECommand.WRITE);
+                    break;
+                case MOVE:
+                    strFile = getStringChoice();
+                    String strFileNew = getStringChoice();
+
+                    aryOutput = CClientManager.handleRenameOperation(strFile, strFileNew);
+
+                    data = CUDPClient.sendData(strServerAdd, aryOutput);
+
+                    if (data != null) {
+                        displayServerResponse(data, ECommand.MOVE);
+                    }
+                    break;
+                case ACK:
+                    break;
+                case LASTMODI:
+
+                    break;
+                case EXIT:
+                    break;
+                default:
+                    System.out.println("Invalid Choice");
+                    break;
+            }
+
+        } while (intChoice != 99);
+
+        System.out.println("\nThank you for using the application.");
+    }
+
+    private static void displayMainMenu() {
+        System.out.println("\n" + new String(new char[50]).replace("\0", "="));
+        System.out.print("|" + new String(new char[20]).replace("\0", " "));
+        System.out.print("Main Menu");
+        System.out.println(new String(new char[19]).replace("\0", " ") + "|");
+        System.out.println(new String(new char[50]).replace("\0", "="));
+
+        System.out.println("1. Read File Data");
+        System.out.println("2. Write File Data");
+        System.out.println("3. Delete File Data");
+        System.out.println("4. Create New File");
+        System.out.println("5. Move/Rename File");
+        System.out.println("6. Monitor File");
+        System.out.println("99. Exit the application");
+    }
+
+    private static int getIntChoice(String pStrQns) {
+        System.out.print(pStrQns);
+        int intChoice = sc.nextInt();
+        sc.nextLine();
+
+        return intChoice;
+    }
+
+    private static int getIntChoice() {
+        return getIntChoice("Please enter your choice: ");
+    }
+
+    private static String getStringChoice() {
+        System.out.print("Please enter String value: ");
+
+        return sc.nextLine();
+    }
+
+}
+
+package settings;
+
+import io.CFileFactory;
+import java.io.IOException;
+import java.util.Properties;
+
+public class CSettingManager {
+
+    private static final Properties objProperties = new Properties();
+    private static final String strPropertyPath = "setting/Settings.xml";
+
+    private CSettingManager() {
+    }
+
+    static {
+        try {
+            objProperties.loadFromXML(CFileFactory.getFile_InputStream(strPropertyPath));
+        } catch (IOException ex) {
+            System.out.println("Unable to load properties file");
+            System.out.println(ex);
+            System.exit(0);
+        }
+    }
+
+    public static Properties getPropertiesFile() {
+        return objProperties;
+
+    }
+
+    public static void setSetting(String pStrKey, String pStrValue) {
+        getPropertiesFile().setProperty(pStrKey, pStrValue);
+    }
+
+    public static String getSetting(String pStrName) {
+        String strValue = getPropertiesFile().getProperty(pStrName);
+
+        return strValue;
+    }
+
+    public static int getIntSetting(String pStrName) {
+        return Integer.parseInt(getSetting(pStrName));
+    }
+
+}
+
+package util;
+
+import java.util.Random;
+
+public class CRandomGenerator {
+
+    public static int getInt(int pIntMin, int pIntMax) {
+        Random objRandom = new Random();
+        
+        return objRandom.nextInt(pIntMax - pIntMin + 1) + pIntMin;
+    }
+}
