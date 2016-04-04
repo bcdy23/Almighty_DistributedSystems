@@ -58,14 +58,14 @@ public class FileClient {
      */
     public static void main(String[] args) throws IOException {
 
-//        String strServerAdd = "172.22.248.33";
-        String strServerAdd = "127.0.0.1";
+        String strServerAdd = "172.22.248.33";
+//        String strServerAdd = "127.0.0.1";
         System.out.println("Initalizing system..\n");
 
         connectionEstablish(strServerAdd);
 
         int intFreshness = getIntChoice("Set Freshness Interval (sec) ");
-        
+
         System.out.println("\nSystem initialization completed!");
 
         System.out.println("\nWelcome to Almighty Distributed File System");
@@ -116,8 +116,9 @@ public class FileClient {
 
                     data = CUDPClient.sendData(strServerAdd, aryOutput);
 
-                    displayServerReadResponse(data, strFile, intOffset, intCount2);
-
+                    if (data != null) {
+                        displayServerReadResponse(data, strFile, intOffset, intCount2);
+                    }
                     break;
                 case WRITE:
 
@@ -129,7 +130,9 @@ public class FileClient {
 
                     data = CUDPClient.sendData(strServerAdd, aryOutput);
 
-                    displayServerResponse(data, ECommand.WRITE);
+                    if (data != null) {
+                        displayServerResponse(data, ECommand.WRITE);
+                    }
 
                     break;
                 case DELETE:
@@ -142,7 +145,9 @@ public class FileClient {
 
                     data = CUDPClient.sendData(strServerAdd, aryOutput);
 
-                    displayServerResponse(data, ECommand.DELETE);
+                    if (data != null) {
+                        displayServerResponse(data, ECommand.DELETE);
+                    }
                     break;
                 case CREATE:
                     strFile = getStringChoice();
@@ -151,8 +156,9 @@ public class FileClient {
 
                     data = CUDPClient.sendData(strServerAdd, aryOutput);
 
-                    displayServerResponse(data, ECommand.CREATE);
-
+                    if (data != null) {
+                        displayServerResponse(data, ECommand.CREATE);
+                    }
                     break;
                 case MONITOR:
                     strFile = getStringChoice();
@@ -162,12 +168,13 @@ public class FileClient {
 
                     data = CUDPClient.sendData(strServerAdd, aryOutput);
 
-                    int intCode = displayServerResponse(data, ECommand.MONITOR);
+                    if (data != null) {
+                        int intCode = displayServerResponse(data, ECommand.MONITOR);
 
-                    if (intCode == ECommand.ACK.getCode()) {
-                        new CUDPServer_MultiCast().execute(strFile, intCount);
+                        if (intCode == ECommand.ACK.getCode()) {
+                            new CUDPServer_MultiCast().execute(strFile, intCount);
+                        }
                     }
-
                     //Start Mointor
                     //displayServerResponse(data, ECommand.WRITE);
                     break;
@@ -179,7 +186,9 @@ public class FileClient {
 
                     data = CUDPClient.sendData(strServerAdd, aryOutput);
 
-                    displayServerResponse(data, ECommand.MOVE);
+                    if (data != null) {
+                        displayServerResponse(data, ECommand.MOVE);
+                    }
                     break;
                 case ACK:
                     break;

@@ -91,13 +91,16 @@ public class CUDPClient {
 
         DatagramPacket response = new DatagramPacket(buf, buf.length);
 
-        while (true) {
+        int intRetry = 0;
+        
+        while (intRetry < 10) {
             try {
                 socket.receive(response);
 
                 if (CRandomGenerator.getInt(1, 10) < intFailure) {
-                    System.out.println("Recieved packet dropped");
+                    System.out.println("Recieved packet dropped. Retry " + intRetry);
                     socket.send(packet);
+                    intRetry++;
                 } else {
                     byte[] aryOutput = new byte[response.getData().length];
 
@@ -113,10 +116,13 @@ public class CUDPClient {
                 // resend
                 if (CRandomGenerator.getInt(1, 10) > intFailure) {
                     socket.send(packet);
+                    intRetry++;
                 } else {
-                    System.out.println("Sent packet dropped");
+                    System.out.println("Sent packet dropped. Retry " + intRetry);
                 }
             }
         }
+        System.out.println("Data cannot be send. Network is unstable");
+        return null;
     }
 }
