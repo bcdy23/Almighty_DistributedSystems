@@ -9,6 +9,10 @@ public class CFileCacheManager {
     public static final HashMap<String, CFile> objFileCache = new HashMap<>();
 
     public static void setFileCache(String pStrFileName, String pAryData, long pLngLastModi) {
+        setFileCache(pStrFileName, pAryData, pLngLastModi, false);
+    }
+
+    public static void setFileCache(String pStrFileName, String pAryData, long pLngLastModi, boolean setLastValid) {
         CFile objFile = new CFile();
 
         objFile.setServerLastModified(pLngLastModi);

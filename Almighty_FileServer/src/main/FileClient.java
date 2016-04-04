@@ -39,12 +39,66 @@ public class FileClient {
         return intCode;
     }
 
+    private static int displayServerWriteResponse(byte[] pAryData, String pStrFileName, int pIntOffset, String pStrData) {
+        int intCode = CNetworkManager.unmarshallInt(pAryData, 0);
+
+        String strMsg = CNetworkManager.unmarshallString(pAryData, 4).toString();
+
+        System.out.println(strMsg);
+
+        if (intCode == ECommand.ACK.getCode()) {
+
+            long lngLastModi = CNetworkManager.unmarshallLong(pAryData, strMsg.length() + 8);
+
+            if (CFileCacheManager.fileInCache(pStrFileName)) {
+                StringBuilder objOut = new StringBuilder(CFileCacheManager.getCacheBlock(pStrFileName, 0));
+
+                objOut.insert(pIntOffset, pStrData);
+
+                CFileCacheManager.setFileCache(pStrFileName, objOut.toString(), lngLastModi);
+            }
+
+        }
+
+        return intCode;
+    }
+
+    private static int displayServerDeleteResponse(byte[] pAryData, String pStrFileName, int pIntOffset, int pIntCount) {
+        int intCode = CNetworkManager.unmarshallInt(pAryData, 0);
+
+        String strMsg = CNetworkManager.unmarshallString(pAryData, 4).toString();
+
+        System.out.println(strMsg);
+
+        if (intCode == ECommand.ACK.getCode()) {
+
+            long lngLastModi = CNetworkManager.unmarshallLong(pAryData, strMsg.length() + 8);
+
+            if (CFileCacheManager.fileInCache(pStrFileName)) {
+                StringBuilder objOut = new StringBuilder(CFileCacheManager.getCacheBlock(pStrFileName, 0));
+
+                objOut.delete(pIntOffset, pIntOffset + pIntCount);
+
+                CFileCacheManager.setFileCache(pStrFileName, objOut.toString(), lngLastModi);
+            }
+
+        }
+
+        return intCode;
+    }
+
     private static int displayServerResponse(byte[] pAryData, ECommand pObjCommand) {
         int intCode = CNetworkManager.unmarshallInt(pAryData, 0);
 
         String strMsg = CNetworkManager.unmarshallString(pAryData, 4).toString();
 
         System.out.println(strMsg);
+
+        long lngLastModi;
+
+        if (intCode == ECommand.ACK.getCode()) {
+
+        }
 
         return intCode;
     }
@@ -127,7 +181,7 @@ public class FileClient {
                     data = CUDPClient.sendData(strServerAdd, aryOutput);
 
                     if (data != null) {
-                        displayServerResponse(data, ECommand.WRITE);
+                        displayServerWriteResponse(data, strFile, intOffset, strData);
                     }
 
                     break;
@@ -142,7 +196,7 @@ public class FileClient {
                     data = CUDPClient.sendData(strServerAdd, aryOutput);
 
                     if (data != null) {
-                        displayServerResponse(data, ECommand.DELETE);
+                        displayServerDeleteResponse(data, strFile, intOffset, intCount);
                     }
                     break;
                 case CREATE:

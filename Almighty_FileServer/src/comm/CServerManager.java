@@ -253,8 +253,8 @@ public class CServerManager {
                 addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
                 addToResult(lstBytes, "Written data to '" + strPathName + "' successfully.");
 
-                long fileSize = CFileFactory.getFileSize(strPathName);
-                addToResult(lstBytes, marshallLong(fileSize));
+                long lngLastModi = CFileFactory.getLastModifiedTime(strPathName);
+                addToResult(lstBytes, marshallLong(lngLastModi));
                 break;
             default:
                 break;
@@ -287,8 +287,8 @@ public class CServerManager {
                 addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
                 addToResult(lstBytes, "Deleted data from '" + strPathName + "' successfully.");
 
-                long fileSize = CFileFactory.getFileSize(strPathName);
-                addToResult(lstBytes, marshallLong(fileSize));
+                long lngLastModi = CFileFactory.getLastModifiedTime(strPathName);
+                addToResult(lstBytes, marshallLong(lngLastModi));
                 break;
             default:
                 break;
