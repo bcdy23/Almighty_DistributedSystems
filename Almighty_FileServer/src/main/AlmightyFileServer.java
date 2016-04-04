@@ -6,7 +6,7 @@ import java.net.SocketException;
 
 public class AlmightyFileServer {
 
-    public static void main(String[] args) throws SocketException, IOException {
+    public static void main(String[] args) {
     	
     	try {
 	        CUDPServer objServer = new CUDPServer();
