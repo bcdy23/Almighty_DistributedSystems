@@ -4,10 +4,6 @@ import io.CFileFactory;
 import java.io.IOException;
 import java.util.Properties;
 
-/**
- *
- * @author King Chody
- */
 public class CSettingManager {
 
     private static final Properties objProperties = new Properties();

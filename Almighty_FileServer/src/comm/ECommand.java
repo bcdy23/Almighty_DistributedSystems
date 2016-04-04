@@ -1,9 +1,5 @@
 package comm;
 
-/**
- *
- * @author Bryden
- */
 public enum ECommand {
     READ(1),
     WRITE(2),

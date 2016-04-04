@@ -12,10 +12,6 @@ import comm.ECommand;
 import java.io.IOException;
 import java.util.Scanner;
 
-/**
- *
- * @author Bryden
- */
 public class FileClient {
 
     private static Scanner sc = new Scanner(System.in);

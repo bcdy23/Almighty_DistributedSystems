@@ -13,10 +13,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 import settings.CSettingManager;
 
-/**
- *
- * @author King Chody & Gosu the Minion
- */
 public class CFileFactory {
 
     private static Path objFolderPath = null;

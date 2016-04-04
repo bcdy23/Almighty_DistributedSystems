@@ -10,10 +10,6 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import util.CRandomGenerator;
 
-/**
- *
- * @author Bryden
- */
 public class CUDPClient {
 
     private static int intSeqId = 0;
@@ -21,6 +17,7 @@ public class CUDPClient {
     private static final int intFailure = 0;
 
     public static byte[] connectionEstablish(String pStrAdd) throws SocketException, UnknownHostException, IOException {
+    	
         byte[] aryData = marshallInt(ECommand.CONN.getCode());
         byte[] arySeq = CNetworkManager.marshallInt(intSeqId);
 
