@@ -70,6 +70,8 @@ public class FileClient {
 
         connectionEstablish(strServerAdd);
 
+        int intFreshness = getIntChoice("Set Freshness Interval (sec) ");
+        
         System.out.println("\nSystem initialization completed!");
 
         System.out.println("\nWelcome to Almighty Distributed File System");
@@ -97,7 +99,7 @@ public class FileClient {
 
                     if (CFileCacheManager.fileInCache(strFile)) {
 
-                        if (CClientManager.validCache(strFile, strServerAdd, 10000)) {
+                        if (CClientManager.validCache(strFile, strServerAdd, intFreshness * 1000)) {
                             System.out.println("Reading from Cache");
 
                             String strData = CFileCacheManager.getCacheBlock(strFile, 0);
@@ -114,7 +116,7 @@ public class FileClient {
                         }
                     } else {
                         intCount2 = intCount;
-                        intCount = 500;
+                        intCount = 850;
                     }
                     aryOutput = CClientManager.handleReadOperation(strFile, intOffset, intCount);
 
@@ -218,12 +220,16 @@ public class FileClient {
         System.out.println("99. Exit the application");
     }
 
-    private static int getIntChoice() {
-        System.out.print("Please enter your choice: ");
+    private static int getIntChoice(String pStrQns) {
+        System.out.print(pStrQns);
         int intChoice = sc.nextInt();
         sc.nextLine();
 
         return intChoice;
+    }
+
+    private static int getIntChoice() {
+        return getIntChoice("Please enter your choice: ");
     }
 
     private static String getStringChoice() {
