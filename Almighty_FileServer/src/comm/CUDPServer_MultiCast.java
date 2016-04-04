@@ -24,7 +24,7 @@ public class CUDPServer_MultiCast {
         socket = new DatagramSocket(2222);
     }
 
-    public void execute(long pLngPeriod) throws IOException {
+    public void execute(String pStrFileNme, long pLngPeriod) throws IOException {
 
         long lngTimeStart = System.currentTimeMillis();
 
@@ -38,7 +38,7 @@ public class CUDPServer_MultiCast {
             try {
                 socket.receive(objPacket);
 
-                byte[] aryOutput = CServerManager.performMonitoringOperation(objPacket.getData(), objPacket.getAddress().getHostAddress());
+                byte[] aryOutput = CServerManager.performMonitoringOperation(pStrFileNme, objPacket.getData(), objPacket.getAddress().getHostAddress());
 
                 InetAddress objAddress = objPacket.getAddress();
 

@@ -169,7 +169,7 @@ public class FileClient {
                     int intCode = displayServerResponse(data, ECommand.MONITOR);
 
                     if (intCode == ECommand.ACK.getCode()) {
-                        new CUDPServer_MultiCast().execute(intCount);
+                        new CUDPServer_MultiCast().execute(strFile, intCount);
                     }
 
                     //Start Mointor

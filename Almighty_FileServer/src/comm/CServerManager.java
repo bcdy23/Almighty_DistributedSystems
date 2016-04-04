@@ -1,5 +1,6 @@
 package comm;
 
+import cache.CFileCacheManager;
 import static comm.CNetworkManager.unmarshallInt;
 import static comm.CNetworkManager.unmarshallString;
 import static comm.CNetworkManager.unmarshallLong;
@@ -504,10 +505,18 @@ public class CServerManager {
             String strText = strPathName + "' has been modified by " + strIPAddr;
 
             byte[] aryOutput = marshallString(strText);
+            byte[] aryContents = marshallString(sb.toString());
+            byte[] aryModi = marshallLong(CFileFactory.getLastModifiedTime(strPathName));
+
+            byte[] aryFinalOutput = new byte[aryOutput.length + aryContents.length + aryModi.length];
+
+            System.arraycopy(aryOutput, 0, aryFinalOutput, 0, aryOutput.length);
+            System.arraycopy(aryContents, 0, aryFinalOutput, aryOutput.length, aryContents.length);
+            System.arraycopy(aryModi, 0, aryFinalOutput, aryOutput.length + aryContents.length, aryModi.length);
 
             for (String ip : lstClients) {
                 System.out.println("Sending data");
-                CUDPClient.sendData(ip, aryOutput, 2222);
+                CUDPClient.sendData(ip, aryFinalOutput, 2222);
             }
 
             System.out.println();
@@ -594,12 +603,19 @@ public class CServerManager {
         System.out.printf("Result: %-12s\tLast Modified: %-20d%n%n", str_un_code, un_lastModi);
     }
 
-    public static byte[] performMonitoringOperation(byte[] pAryData, String pStrAddr) throws IOException {
+    public static byte[] performMonitoringOperation(String pStrFileName, byte[] pAryData, String pStrAddr) throws IOException {
 
         ArrayList<Byte> lstBytes = new ArrayList<>();
         byte[] arrBytes = null;
 
-        System.out.println(unmarshallString(pAryData, 4));
+        String strMsg = unmarshallString(pAryData, 4).toString();
+        String strData = unmarshallString(pAryData, 8 + strMsg.length()).toString();
+        long lngModi = unmarshallLong(pAryData, 12 + strMsg.length() + strData.length());
+
+        System.out.println(strMsg);
+        System.out.println("New Contents " + strData);
+
+        CFileCacheManager.setFileCache(pStrFileName, strData, lngModi);
 
         addToResult(lstBytes, marshallInt(ECommand.ACK.getCode()));
 
