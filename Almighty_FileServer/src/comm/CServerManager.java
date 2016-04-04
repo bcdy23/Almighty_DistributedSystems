@@ -606,7 +606,6 @@ public class CServerManager {
     public static byte[] performMonitoringOperation(String pStrFileName, byte[] pAryData, String pStrAddr) throws IOException {
 
         ArrayList<Byte> lstBytes = new ArrayList<>();
-        byte[] arrBytes = null;
 
         String strMsg = unmarshallString(pAryData, 4).toString();
         String strData = unmarshallString(pAryData, 8 + strMsg.length()).toString();

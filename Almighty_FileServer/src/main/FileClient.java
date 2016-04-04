@@ -15,7 +15,6 @@ import comm.CUDPServer_MultiCast;
 import comm.ECommand;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Scanner;
 
 /**
@@ -133,7 +132,7 @@ public class FileClient {
 
                     data = CUDPClient.sendData(strServerAdd, aryOutput);
 
-                    int intReturnCode = displayServerResponse(data, ECommand.WRITE);
+                    displayServerResponse(data, ECommand.WRITE);
 
                     break;
                 case DELETE:
