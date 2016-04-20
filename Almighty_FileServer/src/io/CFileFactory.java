@@ -189,7 +189,7 @@ public class CFileFactory {
             }
 
             Files.move(objFilePathOld, objFilePathNew.getParent().resolve(
-                    objFilePathOld.getFileName()));
+                    objFilePathNew.getFileName()));
         }
 
         return IO_STATUS.SUCCESS;

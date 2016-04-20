@@ -76,13 +76,13 @@ public class CServerManager {
 
             case DELETE:
                 // Non-Idempotent
-                arrBytes = clientCache.get(seqNumber);
-                if (arrBytes != null) {
-
-                    System.out.println("One-update semantics, retrieving from cache..");
-                    printCodeMsg(arrBytes);
-                    return arrBytes;
-                }
+//                arrBytes = clientCache.get(seqNumber);
+//                if (arrBytes != null) {
+//
+//                    System.out.println("One-update semantics, retrieving from cache..");
+//                    printCodeMsg(arrBytes);
+//                    return arrBytes;
+//                }
 
                 // Perform action
                 deleteFromFile(pAryData, offset, lstBytes);
@@ -141,13 +141,13 @@ public class CServerManager {
 
             case WRITE:
                 // Non-Idempotent
-                arrBytes = clientCache.get(seqNumber);
-                if (arrBytes != null) {
-
-                    System.out.println("One-update semantics, retrieving from cache..");
-                    printCodeMsg(arrBytes);
-                    return arrBytes;
-                }
+//                arrBytes = clientCache.get(seqNumber);
+//                if (arrBytes != null) {
+//
+//                    System.out.println("One-update semantics, retrieving from cache..");
+//                    printCodeMsg(arrBytes);
+//                    return arrBytes;
+//                }
 
                 // Perform action
                 writeToFile(pAryData, offset, lstBytes);
